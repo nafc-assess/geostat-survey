@@ -1,0 +1,78 @@
+---
+title: "Phase 1"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(SimSurvey)
+```
+
+# Simulate an age-structured, spatially-correlated population
+
+`sim_distribution()` is used to distribute a population simulated using `sim_abundance()` throughout a grid. 
+
+- Key arguments:
+
+1. `sim` -- A list with abundance details like produced by `sim_abundance()`
+  
+  - `ages`, `years` -- supply vectors of ages and years to simulate across
+  - `R`, `Z`, `N0`, `growth` -- supply closures such as `sim_R()`, `sim_Z()`, `sim_N0()` and `sim_vonB()`
+  
+2. `grid` -- A raster object defining the survey grid, like the one produced by `make_grid()` -- sets up a depth stratified survey grid, returns a raster object with four layers: `depth`, `cell`, `division`, and `strat`; Number of strata are affected by the number of divisions (`n_div`), horizontal splits (`strat_splits`), the depth gradient (`shelf_depth`, `shelf_width`, `depth_range`), and depth breaks (`strat_breaks`)
+
+3. `ays_covar` -- Closure for simulating age-year-space covariance, like `sim_ays_covar()` -- covarience matrix
+  
+4. `depth_par` -- Closure for defining relationship between abundance and depth, like `sim_parabola()`
+
+```{r}
+set.seed(431)
+pop <- sim_abundance(ages = 1:20, #fish age vector
+                     years = 1:20, #year vector
+                     Z = sim_Z(log_mean = log(0.6), #Total mortality matrix -- rnorm
+                               log_sd = 0.1,
+                               phi_age = 0.9,
+                               phi_year = 0.9, 
+                               plot = TRUE),
+                     R = sim_R(log_mean = log(1e+07), #Recruitment vector -- rnorm
+                               log_sd = 0.5,
+                               random_walk = TRUE, 
+                               plot = TRUE),
+                     N0 = sim_N0(N0 = "exp", #Starting abundance vector -- exponential Z; N0 at age 1 is R0
+                                 plot = TRUE), 
+                     growth = sim_vonB(Linf = 100, #abundance-at-age matrix
+                                       L0 = 5, 
+                                       K = 0.2, 
+                                       log_sd = 0.05, 
+                                       plot = TRUE,
+                                       length_group = 3))  %>%
+                                      
+  sim_distribution(grid = make_grid(x_range = c(-140, 140), # km
+                                    y_range = c(-140, 140),# km
+                                    res = c(10, 10), # km
+                                    shelf_depth = 200, #m
+                                    shelf_width = 100, #km
+                                    depth_range = c(10, 1000), #m
+                                    n_div = 1, #number of division
+                                    strat_breaks = seq(0, 1000, by = 40), #strata depth breaks, meter
+                                    strat_splits = 2, # horizontally split strat
+                                    method = "spline"), #spline, loess, linear interpolation options
+                   ays_covar = sim_ays_covar(range = 300, #adding noise correlated across space, year, and age dimensions -- covariance matrix
+                                             phi_age = 0.8, #strong correlation across ages
+                                             phi_year = 0.1),#weak correlation across years
+                   depth_par = sim_parabola(mu = 200, #defining relationship between abundance and depth, i.e., adding a parabolic depth 'preference', fish prefers occurring around 200 meters 
+                                            sigma = 70))
+
+  
+```
+
+
+Some graphs:
+
+```{r}
+plot_trend(pop)
+```
+
+```{r}
+plot_surface(pop)
+```
