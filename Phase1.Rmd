@@ -98,7 +98,7 @@ ggplot(aes(x, y, fill = log(N + 1))) +
     facet_wrap(~year) +
   scale_fill_viridis_c()
 
-# distribution of N of an age in a year in a cell
+# distribution of N of an age in all year in a cell
 
 df_sim %>% 
   group_by(x, y, year, cell, age) %>% 
@@ -116,40 +116,50 @@ ggplot(aes(x,y,fill=log(N/1e+07)))+
 
 
 ```{r}
+# distribution of N of an age in a year in a cell (interactive plots with an Age-Year slider)
+
 plot_distribution2 <-
 function (sim, ages = 1:10, years = 1:10, type = "contour", 
     scale = "natural", ...) 
 {
     age <- NULL
-    xax <- list(title = "", zeroline = FALSE, showline = FALSE, 
-        showticklabels = FALSE, showgrid = FALSE, ticks = "")
+    xax <- list(title = "", zeroline = FALSE, showline = FALSE, showticklabels = FALSE, showgrid = FALSE, ticks = "")
     yax <- c(scaleanchor = "x", xax)
-    d <- merge(sim$grid_xy, sim$sp_N[age %in% ages & year %in% 
-        years, ], by = "cell")
+    d <- merge(sim$grid_xy, sim$sp_N[age %in% ages & year %in% years, ], by = "cell")
     if (scale == "log") 
         d$N <- log(d$N)
+    
     d$ay <- paste(d$age, d$year, sep = "-")
     split_d <- split(d, d$ay)
     split_d <- lapply(split_d, function(.) {
         stats::xtabs(N ~ y + x, data = ., subset = NULL)
     })
+    
     x <- sort(unique(d$x))
     y <- sort(unique(d$y))
     ay_combos <- expand.grid(age = sort(unique(d$age)), year = sort(unique(d$year)))
     ay_combos$ay <- paste(ay_combos$age, ay_combos$year, sep = "-")
     split_d <- split_d[ay_combos$ay]
+    
     p <- plot_ly(x = ~x, y = ~y, ...)
-    visible <- rep(TRUE, length(split_d))
-    showscale <- rep(FALSE, length(split_d))
-    showscale[1] <- TRUE
-    steps <- list()
+          visible <- rep(TRUE, length(split_d))
+          showscale <- rep(FALSE, length(split_d))
+          showscale[1] <- TRUE
+          steps <- list()
+          
     for (i in seq_along(split_d)) {
         vis <- rep(FALSE, length(split_d))
         vis[i] <- TRUE
-        p <- p %>% add_trace(type = type, z = matrix(split_d[[i]], nrow=nrow(split_d[[i]]), ncol=ncol(split_d[[i]])), visible = i == 
-            1, showscale = vis, name = names(split_d)[i], colorbar = list(title = "N")) %>% 
+        p <- p %>% add_trace(type = type, 
+                             z = matrix(split_d[[i]], 
+                             nrow=nrow(split_d[[i]]), 
+                             ncol=ncol(split_d[[i]])), 
+                             visible = i == 1, 
+                             showscale = vis, 
+                             name = names(split_d)[i], 
+                             colorbar = list(title = "N")) %>% 
             layout(xaxis = xax, yaxis = yax)
-        steps[[i]] <- list(args = list(list(visible = vis, showscale = vis)), 
+            steps[[i]] <- list(args = list(list(visible = vis, showscale = vis)), 
             method = "update", label = names(split_d)[i])
     }
     if (length(ages) > 1 | length(years) > 1) {
@@ -163,27 +173,3 @@ function (sim, ages = 1:10, years = 1:10, type = "contour",
 plot_distribution2(pop, ages = 1:3, years = 1:3, type = "heatmap")
 
 ```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
