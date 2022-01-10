@@ -6,6 +6,7 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(SimSurvey)
+library(plotly)
 ```
 
 # Simulate an age-structured, spatially-correlated population
@@ -98,20 +99,6 @@ ggplot(aes(x, y, fill = log(N + 1))) +
     facet_wrap(~year) +
   scale_fill_viridis_c()
 
-# distribution of N of an age in all year in a cell
-
-df_sim %>% 
-  group_by(x, y, year, cell, age) %>% 
-  summarise(N = sum(N), .groups = "drop") %>% 
-ggplot(aes(x,y,fill=log(N/1e+07)))+
-  geom_raster()+ 
-    facet_wrap(~age) +
-  theme_minimal() +
-  scale_fill_viridis_c()+
-    theme(legend.position="top",
-          legend.justification="right",
-          legend.direction="horizontal")
-
 ```
 
 
@@ -170,6 +157,221 @@ function (sim, ages = 1:10, years = 1:10, type = "contour",
 }
 
 
-plot_distribution2(pop, ages = 1:3, years = 1:3, type = "heatmap")
+plot_distribution2(pop, ages = 1:20, years = 1:20, type = "heatmap")
 
 ```
+
+# Survey the Simulated population
+
+
+`sim_survey()` function applies stratified random sampling of a survey with a catchability defined by a logistic curve [`sim_logistic()`].
+
+
+```{r}
+set.seed(34)
+survey <- sim_survey(
+  pop, #sim_distribution
+  n_sims = 1, # number of survey
+  q = sim_logistic(k = 2, x0 = 3, plot = FALSE), # function of catchability at age (k=The steepness of the curve, x0= x-value of the sigmoid's midpoint, curve max value=1)
+  #trawl_dim = c(1.5, 0.02), #	Trawl width and distance (default=same units as grid)
+  #resample_cells = FALSE, # Allow resampling of sampling units?
+  binom_error = TRUE, # Impose binomial error? 
+  #min_sets = 2, # Minimum number of sets per strat
+  set_den = 2/1000, #Set density (number of sets per [grid unit] squared).
+  #lengths_cap = 500, #Maximum number of lengths measured per set
+  #ages_cap = 10,
+  #age_sampling = "stratified",
+  #age_length_group = 1,
+  #age_space_group = "division",
+  #light = TRUE
+) %>% 
+  SimSurvey::run_strat()
+
+plot_survey(survey, which_year = 2, which_sim = 1) # plotting 1st set of 2nd year
+
+```
+
+
+# Fitting a geostatistical spatiotemporal model
+
+sdmTMB is an R package for fast and flexible fitting of spatiotemporal species distribution GLMMs with TMB
+
+- Modeling steps:
+
+  1. **Make an R-INLA "mesh" representing spatial "knots"** - `make_mesh()`
+  2. **Fit a spatiotemporal GLMM** - `sdmTMB()`
+      - Implements a geostatistical model using TMB, R-INLA, and Gaussian Markov random fields
+      - Function is set up similarly to `glm()`, `lmer()`, or `glmmTMB()`
+  3. **Inspect the model** - `print()`, `tidy()`, `predict()`, `residuals()`, `sdmTMB_cv()`, `sdmTMB_sim()`, `AIC()`
+  4. **Predict on a grid that represents the survey domain** - `predict()`
+  5. **Calculate the survey index** - `get_index()`
+      - Use `get_index()` to sum the expected density or abundance across the grid and calculate standard errors
+
+```{r}
+library(sdmTMB)
+```
+
+
+## Creating an SPDE (Stochastic partial differential equation) mesh object representing spatial "knots" via the INLA R package
+
+The important part of this is coming up with a reasonable resolution of "knots" or representative locations that will be modeled. Values in between these knots will be interpolated with bilinear interpolation along the triangles. This approach greatly increases computational efficiency. Smaller `cutoff` values (in units x-y coordinate units), will generate more knots. More knots will make for a better approximation at the expense of fitting time. There are other possible meshes and you can use any mesh from INLA.
+
+```{r}
+
+## creating a data frame by including population survey grids
+xy <- as_tibble(survey$grid_xy)
+dat <- as_tibble(survey$setdet) %>%
+  select(x, y, set, year, N = n, tow_area) %>%
+  left_join(., xy, by = c("x", "y")) %>%
+  mutate(offset = log(tow_area)) #setting up an "offset" variable to represent the tow area
+
+
+mesh <- sdmTMB::make_mesh(
+  dat, 
+  xy_cols = c("x", "y"),
+  #type = c("kmeans", "cutoff", "cutoff_search"), #Method to create the mesh, default=cutoff
+  cutoff = 10, #The minimum allowed distance between points in the mesh, Smaller `cutoff` values (in units x-y coordinate units), will generate more knots
+  #n_knots, #number of desired knots
+  #seed = 42, #Random seed
+  #refine = list(min.angle = 21, max.edge = Inf, max.n.strict = -1, max.n = 1000),
+  #mesh = NULL
+)
+
+plot(mesh)
+```
+
+## Fitting a model
+
+- Key arguments:
+
+-   `include_spatial = TRUE` means the model will include a separate spatial random field (a wiggly intercept surface that stays constant through time) and spatiotemporal fields (a random field that varies each year). There's also an option for correlated fields (`ar1_fields = TRUE`).
+-   `time = "year"` tells the function which column of data represents the time element and tells the model this is spatiotemporal, not just spatial, data.
+-   `silent = FALSE` tells the function to print out TMB progress messages.
+-   `offset` is a reserved word in sdmTMB and will be fit with its coefficient fixed at 1.
+-   `0 + as.factor(year)` in the formula sets up the model matrix so that there is an independent mean for each year.
+-   `spde = mesh` tells it to use our mesh from above.
+
+```{r}
+fit <- sdmTMB(N ~ 0 + as.factor(year) + offset,
+              data = dat,
+              mesh = mesh,
+              time = "year",
+              family = nbinom2(link = "log"), 
+              spatial = TRUE)
+#print(fit)
+```
+
+
+Let's look at residuals:
+
+```{r}
+dat$resid <- residuals(fit)
+
+ggplot(dat, aes(x, y, colour = resid, size = abs(resid))) +
+  geom_point() +
+  facet_wrap(~year) +
+  scale_colour_gradient2() +
+  scale_size_area(max_size = 2)
+```
+
+
+## Predicting over the survey domain and calculating an index of abundance
+
+To calculate an index of abundance, first we need to create a grid that covers the entirety of our survey domain. 
+
+```{r}
+library(tidyverse)
+grid_dat <- tidyr::expand_grid(x = sort(unique(df_sim$x)), y = sort(unique(df_sim$y)))
+grid_dat <- purrr::map_dfr(sort(unique(dat$year)), ~ bind_cols(grid_dat, year = .))
+grid_dat$offset <- mean(dat$offset)
+```
+
+
+Next we need to predict from our model onto our survey grid. `return_tmb_object = TRUE` tells the function to return a TMB object that is critical for calculating the survey index. If enabled, the result will be a list with the predictions as one element and the TMB object as another. If disabled, the result will just be a prediction data frame.
+
+The `area` argument represents the area of a grid cell so that the resulting estimate is per m^2^ or km^2^. Here, that is 10 x 10 km. `area` can be a vector if some grid cells overlap land or are partially outside the survey domain.
+
+```{r}
+pred <- predict(fit, 
+                newdata = grid_dat, 
+                return_tmb_object = TRUE, #important for calculating the survey index
+                area = 100)
+index <- get_index(pred) #It sums up the abundance in all of the grid cells and calculates standard errors on the result
+```
+
+
+
+
+
+```{r}
+ggplot(index, aes(year, est)) + geom_line() +
+  geom_ribbon(aes(ymin = lwr, ymax = upr), alpha = 0.4) +
+  xlab('Year') + ylab('N')
+```
+
+
+# Combining Design-based and Model-based estimated indices with the "true" known population trajectory
+
+```{r}
+true_abund <- tibble(year = unique(df_sim$year), N = as.numeric(colSums(survey$I))) %>%
+  mutate(type = "True")
+
+strat_abund <- tibble::as_tibble(survey$total_strat) %>% 
+  mutate(N = total, type = "Design-based") %>% 
+  select(year, N, type)
+
+
+index1 <- index %>%
+  mutate(type = "Model-based", N = est) %>%
+  bind_rows(true_abund) %>%
+  bind_rows(strat_abund) %>% 
+  group_by(type) %>%
+  mutate(geo_mean = exp(mean(log(N), na.rm = TRUE)),
+         lwr_scaled = lwr / geo_mean, N_scaled = N / geo_mean, upr_scaled = upr / geo_mean,
+         type = factor(type, levels = c("True", "Design-based", "Model-based"))) %>% 
+  arrange(type)
+
+
+index2 <- index %>%
+  mutate(type = "Model-based", N = est) %>%
+  bind_rows(true_abund) %>%
+  bind_rows(strat_abund)
+
+```
+
+And make a plot of the result:
+
+```{r, warning=FALSE}
+ggplot(index1, aes(year, N_scaled, group = type)) +
+  geom_line(aes(colour = type, size = type)) +
+  geom_ribbon(aes(ymin = lwr_scaled, ymax = upr_scaled, fill = type), alpha = 0.3) +
+  labs(x = "Year", y = "Relative abundance", colour = "Type", fill = "Type", size = "Type") +
+  scale_color_manual(values = c("Model-based" = "grey30", "Design-based" = "steelblue", "True" = "red")) +
+  scale_fill_manual(values = c("Model-based" = "grey30", "Design-based" = "steelblue", "True" = "red")) +
+  scale_size_manual(values = c("Model-based" = 0.5, "Design-based" = 0.5, "True" = 1))
+```
+
+```{r, warning=FALSE}
+ggplot(index2, aes(year, N, group = type)) +
+  geom_line(aes(colour = type, size = type)) +
+  geom_ribbon(aes(ymin = lwr, ymax = upr), alpha = 0.3) +
+  labs(x = "Year", y = "N", colour = "Type", fill = "Type", size = "Type") +
+  scale_color_manual(values = c("Model-based" = "grey30", "Design-based" = "steelblue", "True" = "red")) +
+  scale_fill_manual(values = c("Model-based" = "grey30", "Design-based" = "steelblue", "True" = "red")) +
+  scale_size_manual(values = c("Model-based" = 0.5, "Design-based" = 0.5, "True" = 1))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
