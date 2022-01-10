@@ -214,7 +214,7 @@ library(sdmTMB)
 
 ## Creating an SPDE (Stochastic partial differential equation) mesh object representing spatial "knots" via the INLA R package
 
-The important part of this is coming up with a reasonable resolution of "knots" or representative locations that will be modeled. Values in between these knots will be interpolated with bilinear interpolation along the triangles. This approach greatly increases computational efficiency. Smaller `cutoff` values (in units x-y coordinate units), will generate more knots. More knots will make for a better approximation at the expense of fitting time. There are other possible meshes and you can use any mesh from INLA.
+The important part of this is coming up with a reasonable resolution of "knots" or representative locations that will be modeled. Values in between these knots will be interpolated with bilinear interpolation along the triangles. This approach greatly increases computational efficiency. Smaller `cutoff` values (in units x-y coordinate units), will generate more knots. More knots will generally make for a better approximation at the expense of fitting time. There are other possible meshes and you can use any mesh from INLA.
 
 ```{r}
 
@@ -244,12 +244,12 @@ plot(mesh)
 
 - Key arguments:
 
--   `include_spatial = TRUE` means the model will include a separate spatial random field (a wiggly intercept surface that stays constant through time) and spatiotemporal fields (a random field that varies each year). There's also an option for correlated fields (`ar1_fields = TRUE`).
+-   `spatial = TRUE` means the model will include a separate spatial random field (a wiggly intercept surface that stays constant through time) and spatiotemporal fields (a random field that varies each year; default is `spatiotemporal = 'iid'`). There's also an option for correlated fields (`spatiotemporal = 'ar1'`).
 -   `time = "year"` tells the function which column of data represents the time element and tells the model this is spatiotemporal, not just spatial, data.
 -   `silent = FALSE` tells the function to print out TMB progress messages.
 -   `offset` is a reserved word in sdmTMB and will be fit with its coefficient fixed at 1.
 -   `0 + as.factor(year)` in the formula sets up the model matrix so that there is an independent mean for each year.
--   `spde = mesh` tells it to use our mesh from above.
+-   `mesh = mesh` tells it to use our mesh from above.
 
 ```{r}
 fit <- sdmTMB(N ~ 0 + as.factor(year) + offset,
@@ -260,7 +260,6 @@ fit <- sdmTMB(N ~ 0 + as.factor(year) + offset,
               spatial = TRUE)
 #print(fit)
 ```
-
 
 Let's look at residuals:
 
@@ -273,6 +272,8 @@ ggplot(dat, aes(x, y, colour = resid, size = abs(resid))) +
   scale_colour_gradient2() +
   scale_size_area(max_size = 2)
 ```
+
+Also see <https://pbs-assess.github.io/sdmTMB/articles/residual-checking.html> for other residual options. Simulated residuals are likely a better option here.
 
 
 ## Predicting over the survey domain and calculating an index of abundance
@@ -291,13 +292,23 @@ Next we need to predict from our model onto our survey grid. `return_tmb_object 
 
 The `area` argument represents the area of a grid cell so that the resulting estimate is per m^2^ or km^2^. Here, that is 10 x 10 km. `area` can be a vector if some grid cells overlap land or are partially outside the survey domain.
 
-```{r}
+```{r, eval=FALSE}
 pred <- predict(fit, 
                 newdata = grid_dat, 
                 return_tmb_object = TRUE, #important for calculating the survey index
                 area = 100)
 index <- get_index(pred) #It sums up the abundance in all of the grid cells and calculates standard errors on the result
 ```
+
+Perhaps a better option is to simulate from the joint parameter distribution and calculate the index with those. This achieves approximately the same result at `bias_correct = TRUE`, but is faster.
+
+```{r}
+pred <- predict(fit, 
+                newdata = grid_dat, 
+                sims = 1000)
+index <- get_index_sims(pred, area = rep(100, nrow(pred))) # sums up the abundance in all of the grid cells and calculates standard errors on the result
+```
+
 
 
 # Combining Design-based and Model-based estimated indices with the "true" known population trajectory
