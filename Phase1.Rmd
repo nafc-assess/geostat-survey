@@ -328,7 +328,6 @@ strat_abund <- tibble::as_tibble(survey$total_strat) %>%
   mutate(N = total, type = "Design-based") %>% 
   select(year, N, type)
 
-
 index1 <- index %>%
 both <- index %>%
   mutate(type = "Model-based", N = est) %>%
@@ -340,6 +339,7 @@ both <- index %>%
          type = factor(type, levels = c("True", "Design-based", "Model-based"))) %>% 
   arrange(type)
 
+
 index2 <- index %>%
   mutate(type = "Model-based", N = est) %>%
   bind_rows(true_abund) %>%
@@ -349,23 +349,17 @@ index2 <- index %>%
 
 And make a plot of the result:
 
-```{r, warning=FALSE}
-
+```{r}
 ggplot(index1, aes(year, N_scaled, group = type)) +
   geom_line(aes(colour = type, size = type)) +
   geom_ribbon(aes(ymin = lwr_scaled, ymax = upr_scaled, fill = type), alpha = 0.3) +
   labs(x = "Year", y = "Relative abundance, geometric mean scaling", colour = "Type", fill = "Type", size = "Type") +
-ggplot(both, aes(year, N_scaled, group = type)) +
-  geom_line(aes(colour = type, size = type)) +
-  geom_ribbon(aes(ymin = lwr_scaled, ymax = upr_scaled, fill = type), alpha = 0.3) +
-  labs(x = "Year", y = "Relative abundance", colour = "Type", fill = "Type", size = "Type") +
   scale_color_manual(values = c("Model-based" = "grey30", "Design-based" = "steelblue", "True" = "red")) +
   scale_fill_manual(values = c("Model-based" = "grey30", "Design-based" = "steelblue", "True" = "red")) +
   scale_size_manual(values = c("Model-based" = 0.5, "Design-based" = 0.5, "True" = 1))
 ```
-<<<<<<< HEAD
 
-```{r, warning=FALSE}
+```{r}
 ggplot(index2, aes(year, N, group = type)) +
   geom_line(aes(colour = type, size = type)) +
   geom_ribbon(aes(ymin = lwr, ymax = upr), alpha = 0.3) +
@@ -377,17 +371,3 @@ ggplot(index2, aes(year, N, group = type)) +
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-=======
->>>>>>> 8185d7bcaa8d5645ed4430b45a24811c357e933a
