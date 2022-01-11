@@ -35,7 +35,7 @@ pop <- sim_abundance(ages = 1:20, #fish age vector
                                phi_age = 0.9,
                                phi_year = 0.9, 
                                plot = TRUE),
-                     R = sim_R(log_mean = log(1e+07), #Recruitment vector -- rnorm
+                     R = sim_R(log_mean = log(3e+07), #Recruitment vector -- rnorm
                                log_sd = 0.5,
                                random_walk = TRUE, 
                                plot = TRUE),
@@ -51,8 +51,8 @@ pop <- sim_abundance(ages = 1:20, #fish age vector
   sim_distribution(grid = make_grid(x_range = c(-140, 140), # km
                                     y_range = c(-140, 140), # km
                                     res = c(10, 10), # km 
-                                    shelf_depth = 200, #m
-                                    shelf_width = 100, #km
+                                    shelf_depth = 200, #Approximate depth of the shelf in m
+                                    shelf_width = 50, #Approximate width of the shelf in km
                                     depth_range = c(10, 1000), #m
                                     n_div = 1, #number of division
                                     strat_breaks = seq(0, 1000, by = 40), #strata depth breaks, meter
@@ -257,7 +257,8 @@ fit <- sdmTMB(N ~ 0 + as.factor(year) + offset,
               mesh = mesh,
               time = "year",
               family = nbinom2(link = "log"), 
-              spatial = TRUE)
+              spatial = TRUE,
+              spatiotemporal = c("IID"))
 #print(fit)
 ```
 
@@ -272,6 +273,10 @@ ggplot(dat, aes(x, y, colour = resid, size = abs(resid))) +
   facet_wrap(~year) +
   scale_colour_gradient2() +
   scale_size_area(max_size = 2)
+```
+```{r}
+qqnorm(dat$resid)
+abline(a = 0, b = 1)
 ```
 
 
@@ -299,16 +304,16 @@ pred <- predict(fit,
 index <- get_index(pred) #It sums up the abundance in all of the grid cells and calculates standard errors on the result
 ```
 
-
-
-
+Let's make some graphs:
 
 ```{r}
+#Total N estimates:
+  
 ggplot(index, aes(year, est)) + geom_line() +
   geom_ribbon(aes(ymin = lwr, ymax = upr), alpha = 0.4) +
   xlab('Year') + ylab('N')
-```
 
+```
 
 # Combining Design-based and Model-based estimated indices with the "true" known population trajectory
 
@@ -345,7 +350,7 @@ And make a plot of the result:
 ggplot(index1, aes(year, N_scaled, group = type)) +
   geom_line(aes(colour = type, size = type)) +
   geom_ribbon(aes(ymin = lwr_scaled, ymax = upr_scaled, fill = type), alpha = 0.3) +
-  labs(x = "Year", y = "Relative abundance", colour = "Type", fill = "Type", size = "Type") +
+  labs(x = "Year", y = "Relative abundance, geometric mean scaling", colour = "Type", fill = "Type", size = "Type") +
   scale_color_manual(values = c("Model-based" = "grey30", "Design-based" = "steelblue", "True" = "red")) +
   scale_fill_manual(values = c("Model-based" = "grey30", "Design-based" = "steelblue", "True" = "red")) +
   scale_size_manual(values = c("Model-based" = 0.5, "Design-based" = 0.5, "True" = 1))
