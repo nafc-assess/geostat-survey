@@ -274,10 +274,13 @@ ggplot(dat, aes(x, y, colour = resid, size = abs(resid))) +
   scale_colour_gradient2() +
   scale_size_area(max_size = 2)
 ```
+<<<<<<< HEAD
 ```{r}
 qqnorm(dat$resid)
 abline(a = 0, b = 1)
 ```
+=======
+>>>>>>> 8185d7bcaa8d5645ed4430b45a24811c357e933a
 
 
 ## Predicting over the survey domain and calculating an index of abundance
@@ -304,6 +307,7 @@ pred <- predict(fit,
 index <- get_index(pred) #It sums up the abundance in all of the grid cells and calculates standard errors on the result
 ```
 
+<<<<<<< HEAD
 Let's make some graphs:
 
 ```{r}
@@ -314,6 +318,8 @@ ggplot(index, aes(year, est)) + geom_line() +
   xlab('Year') + ylab('N')
 
 ```
+=======
+>>>>>>> 8185d7bcaa8d5645ed4430b45a24811c357e933a
 
 # Combining Design-based and Model-based estimated indices with the "true" known population trajectory
 
@@ -326,7 +332,11 @@ strat_abund <- tibble::as_tibble(survey$total_strat) %>%
   select(year, N, type)
 
 
+<<<<<<< HEAD
 index1 <- index %>%
+=======
+both <- index %>%
+>>>>>>> 8185d7bcaa8d5645ed4430b45a24811c357e933a
   mutate(type = "Model-based", N = est) %>%
   bind_rows(true_abund) %>%
   bind_rows(strat_abund) %>% 
@@ -335,6 +345,7 @@ index1 <- index %>%
          lwr_scaled = lwr / geo_mean, N_scaled = N / geo_mean, upr_scaled = upr / geo_mean,
          type = factor(type, levels = c("True", "Design-based", "Model-based"))) %>% 
   arrange(type)
+<<<<<<< HEAD
 
 
 index2 <- index %>%
@@ -342,19 +353,29 @@ index2 <- index %>%
   bind_rows(true_abund) %>%
   bind_rows(strat_abund)
 
+=======
+>>>>>>> 8185d7bcaa8d5645ed4430b45a24811c357e933a
 ```
 
 And make a plot of the result:
 
 ```{r, warning=FALSE}
+<<<<<<< HEAD
 ggplot(index1, aes(year, N_scaled, group = type)) +
   geom_line(aes(colour = type, size = type)) +
   geom_ribbon(aes(ymin = lwr_scaled, ymax = upr_scaled, fill = type), alpha = 0.3) +
   labs(x = "Year", y = "Relative abundance, geometric mean scaling", colour = "Type", fill = "Type", size = "Type") +
+=======
+ggplot(both, aes(year, N_scaled, group = type)) +
+  geom_line(aes(colour = type, size = type)) +
+  geom_ribbon(aes(ymin = lwr_scaled, ymax = upr_scaled, fill = type), alpha = 0.3) +
+  labs(x = "Year", y = "Relative abundance", colour = "Type", fill = "Type", size = "Type") +
+>>>>>>> 8185d7bcaa8d5645ed4430b45a24811c357e933a
   scale_color_manual(values = c("Model-based" = "grey30", "Design-based" = "steelblue", "True" = "red")) +
   scale_fill_manual(values = c("Model-based" = "grey30", "Design-based" = "steelblue", "True" = "red")) +
   scale_size_manual(values = c("Model-based" = 0.5, "Design-based" = 0.5, "True" = 1))
 ```
+<<<<<<< HEAD
 
 ```{r, warning=FALSE}
 ggplot(index2, aes(year, N, group = type)) +
@@ -380,3 +401,5 @@ ggplot(index2, aes(year, N, group = type)) +
 
 
 
+=======
+>>>>>>> 8185d7bcaa8d5645ed4430b45a24811c357e933a
