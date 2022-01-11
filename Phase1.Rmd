@@ -274,12 +274,12 @@ ggplot(dat, aes(x, y, colour = resid, size = abs(resid))) +
   scale_colour_gradient2() +
   scale_size_area(max_size = 2)
 ```
-<<<<<<< HEAD
+
+
 ```{r}
 qqnorm(dat$resid)
 abline(a = 0, b = 1)
 ```
-=======
 
 ## Predicting over the survey domain and calculating an index of abundance
 
@@ -305,7 +305,7 @@ pred <- predict(fit,
 index <- get_index(pred) #It sums up the abundance in all of the grid cells and calculates standard errors on the result
 ```
 
-<<<<<<< HEAD
+
 Let's make some graphs:
 
 ```{r}
@@ -316,7 +316,7 @@ ggplot(index, aes(year, est)) + geom_line() +
   xlab('Year') + ylab('N')
 
 ```
-=======
+
 
 # Combining Design-based and Model-based estimated indices with the "true" known population trajectory
 
@@ -329,7 +329,6 @@ strat_abund <- tibble::as_tibble(survey$total_strat) %>%
   select(year, N, type)
 
 index1 <- index %>%
-both <- index %>%
   mutate(type = "Model-based", N = est) %>%
   bind_rows(true_abund) %>%
   bind_rows(strat_abund) %>% 
@@ -338,7 +337,6 @@ both <- index %>%
          lwr_scaled = lwr / geo_mean, N_scaled = N / geo_mean, upr_scaled = upr / geo_mean,
          type = factor(type, levels = c("True", "Design-based", "Model-based"))) %>% 
   arrange(type)
-
 
 index2 <- index %>%
   mutate(type = "Model-based", N = est) %>%
