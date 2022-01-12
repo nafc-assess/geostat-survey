@@ -177,7 +177,7 @@ survey <- sim_survey(
   #resample_cells = FALSE, # Allow resampling of sampling units?
   binom_error = TRUE, # Impose binomial error? 
   #min_sets = 2, # Minimum number of sets per strat
-  set_den = 2/1000, #Set density (number of sets per [grid unit] squared).
+  set_den = 2/1000, #set per strata ~ strata area with a set density rule, sample size = sum(set numbers per strat) * years
   #lengths_cap = 500, #Maximum number of lengths measured per set
   #ages_cap = 10,
   #age_sampling = "stratified",
@@ -299,10 +299,15 @@ Next we need to predict from our model onto our survey grid. `return_tmb_object 
 The `area` argument represents the area of a grid cell so that the resulting estimate is per m^2^ or km^2^. Here, that is 10 x 10 km. `area` can be a vector if some grid cells overlap land or are partially outside the survey domain.
 
 ```{r, eval=FALSE}
+
+tow_area <- survey$setdet$tow_area[1] # cell and tow area is consistent in the simulation
+cell_area <- survey$setdet$cell_area[1]
+
+
 pred <- predict(fit, 
                 newdata = grid_dat, 
                 return_tmb_object = TRUE, #important for calculating the survey index
-                area = 100)
+                area = cell_area/tow_area)  ### cell_area/tow_area
 index <- get_index(pred) #It sums up the abundance in all of the grid cells and calculates standard errors on the result
 ```
 
@@ -339,17 +344,7 @@ strat_abund <- tibble::as_tibble(survey$total_strat) %>%
   mutate(N = total, type = "Design-based") %>% 
   select(year, N, type)
 
-index1 <- index %>%
-  mutate(type = "Model-based", N = est) %>%
-  bind_rows(true_abund) %>%
-  bind_rows(strat_abund) %>% 
-  group_by(type) %>%
-  mutate(geo_mean = exp(mean(log(N), na.rm = TRUE)),
-         lwr_scaled = lwr / geo_mean, N_scaled = N / geo_mean, upr_scaled = upr / geo_mean,
-         type = factor(type, levels = c("True", "Design-based", "Model-based"))) %>% 
-  arrange(type)
-
-index2 <- index %>%
+index <- index %>%
   mutate(type = "Model-based", N = est) %>%
   bind_rows(true_abund) %>%
   bind_rows(strat_abund)
@@ -359,17 +354,7 @@ index2 <- index %>%
 And make a plot of the result:
 
 ```{r}
-ggplot(index1, aes(year, N_scaled, group = type)) +
-  geom_line(aes(colour = type, size = type)) +
-  geom_ribbon(aes(ymin = lwr_scaled, ymax = upr_scaled, fill = type), alpha = 0.3) +
-  labs(x = "Year", y = "Relative abundance, geometric mean scaling", colour = "Type", fill = "Type", size = "Type") +
-  scale_color_manual(values = c("Model-based" = "grey30", "Design-based" = "steelblue", "True" = "red")) +
-  scale_fill_manual(values = c("Model-based" = "grey30", "Design-based" = "steelblue", "True" = "red")) +
-  scale_size_manual(values = c("Model-based" = 0.5, "Design-based" = 0.5, "True" = 1))
-```
-
-```{r}
-ggplot(index2, aes(year, N, group = type)) +
+ggplot(index, aes(year, N, group = type)) +
   geom_line(aes(colour = type, size = type)) +
   geom_ribbon(aes(ymin = lwr, ymax = upr), alpha = 0.3) +
   labs(x = "Year", y = "N", colour = "Type", fill = "Type", size = "Type") +
@@ -379,4 +364,10 @@ ggplot(index2, aes(year, N, group = type)) +
 ```
 
 
+```{r}
+index2 %>% 
+  plot_ly(x = ~year, color = ~type, legendgroup = ~type) %>% 
+  add_ribbons(ymin = ~lwr, ymax = ~upr, line = list(width = 0), showlegend = FALSE) %>% 
+  add_lines(y = ~N)
+```
 
