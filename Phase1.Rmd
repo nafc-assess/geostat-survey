@@ -74,7 +74,6 @@ pop <- sim_abundance(ages = 1:20, #fish age vector
   plot(depth_Pcurve)
   
 ```
-
 Some graphs:
 
 ```{r}
@@ -84,17 +83,11 @@ plot_trend(pop)
 ```{r}
 plot_surface(pop)
 ```
-
-
-
-
 ```{r}
 library(dplyr)
 xy_sim <- as_tibble(pop$grid_xy)
 df_sim <- as_tibble(pop$sp_N)
 ```
-
-
 ```{r}
 df_sim <- left_join(df_sim, xy_sim, by = "cell")
 
@@ -108,8 +101,6 @@ ggplot(aes(x, y, fill = log(N + 1))) +
   scale_fill_viridis_c()
 
 ```
-
-
 ```{r}
 # distribution of N of an age in a year in a cell (interactive plots with an Age-Year slider)
 
@@ -168,12 +159,9 @@ function (sim, ages = 1:10, years = 1:10, type = "contour",
 plot_distribution2(pop, ages = 1:20, years = 1:20, type = "heatmap")
 
 ```
-
 # Survey the Simulated population
 
-
 `sim_survey()` function applies stratified random sampling of a survey with a catchability defined by a logistic curve [`sim_logistic()`].
-
 
 ```{r}
 set.seed(34)
@@ -198,8 +186,6 @@ survey <- sim_survey(
 plot_survey(survey, which_year = 2, which_sim = 1) # plotting 1st set of 2nd year
 
 ```
-
-
 # Fitting a geostatistical spatiotemporal model
 
 sdmTMB is an R package for fast and flexible fitting of spatiotemporal species distribution GLMMs with TMB
@@ -218,8 +204,6 @@ sdmTMB is an R package for fast and flexible fitting of spatiotemporal species d
 ```{r}
 library(sdmTMB)
 ```
-
-
 ## Creating an SPDE (Stochastic partial differential equation) mesh object representing spatial "knots" via the INLA R package
 
 The important part of this is coming up with a reasonable resolution of "knots" or representative locations that will be modeled. Values in between these knots will be interpolated with bilinear interpolation along the triangles. This approach greatly increases computational efficiency. Smaller `cutoff` values (in units x-y coordinate units), will generate more knots. More knots will generally make for a better approximation at the expense of fitting time. There are other possible meshes and you can use any mesh from INLA.
@@ -251,7 +235,6 @@ mesh <- sdmTMB::make_mesh(
 
 plot(mesh)
 ```
-
 ## Fitting a model
 
 - Key arguments:
@@ -274,9 +257,7 @@ fit <- sdmTMB(N ~ 0 + as.factor(year) + offset,
 print(fit) #summary of the fit
 
 ```
-
-Let's look at residuals:
-
+### Residuals
 ```{r}
 dat$resid <- residuals(fit)
 
@@ -286,25 +267,24 @@ ggplot(dat, aes(x, y, colour = resid, size = abs(resid))) +
   scale_colour_gradient2() +
   scale_size_area(max_size = 2)
 ```
-
 ```{r}
 qqnorm(dat$resid)
 abline(a = 0, b = 1)
 ```
-### Simulation-based residuals
+### simulation-based approach for residuals checks
 
 See more: <https://pbs-assess.github.io/sdmTMB/articles/residual-checking.html>.
 
 - Converting simulated residuals to a DHARMa object
 
-To create a DHARMa object, we need a matrix simulations from the fitted model, true observations, and fitted predicted response.
+To create a DHARMa object, we need simulated response vectors, observed data, and predicted response from the model.
 
 ```{r}
 
 fit_dharma <- DHARMa::createDHARMa(
   simulatedResponse =  simulate(fit, nsim = 500),
-  observedResponse = dat$N, #true observations
-  fittedPredictedResponse = fit$family$linkinv(predict(fit)$est) #fitted predicted response
+  observedResponse = dat$N, # true observations
+  fittedPredictedResponse = fit$family$linkinv(predict(fit)$est_non_rf) # predicted response
 )
 
 ```
@@ -316,10 +296,13 @@ fit_dharma <- DHARMa::createDHARMa(
 plot(fit_dharma)
 
 DHARMa::testResiduals(fit_dharma)
+
+
 DHARMa::testZeroInflation(fit_dharma)
+
+#DHARMa::testSpatialAutocorrelation(fit_dharma, x = dat$x, y = dat$y)
+
 ```
-
-
 ## Predicting over the survey domain and calculating an index of abundance
 
 To calculate an index of abundance, first we need to create a grid that covers the entirety of our survey domain. 
@@ -330,8 +313,6 @@ grid_dat <- tidyr::expand_grid(x = sort(unique(df_sim$x)), y = sort(unique(df_si
 grid_dat <- purrr::map_dfr(sort(unique(dat$year)), ~ bind_cols(grid_dat, year = .))
 grid_dat$offset <- mean(dat$offset)
 ```
-
-
 Next we need to predict from our model onto our survey grid. `return_tmb_object = TRUE` tells the function to return a TMB object that is critical for calculating the survey index. If enabled, the result will be a list with the predictions as one element and the TMB object as another. If disabled, the result will just be a prediction data frame.
 
 The `area` argument represents the area of a grid cell so that the resulting estimate is per m^2^ or km^2^. Here, that is cell_area/tow_area.
@@ -360,8 +341,6 @@ ggplot(index, aes(year, est)) + geom_line() +
   xlab('Year') + ylab('N')
 
 ```
-
-
 # Combining Design-based and Model-based estimated indices with the "true" known population trajectory
 
 ```{r}
@@ -390,12 +369,9 @@ ggplot(index, aes(year, N, group = type)) +
   scale_fill_manual(values = c("Model-based" = "grey30", "Design-based" = "steelblue", "True" = "red")) +
   scale_size_manual(values = c("Model-based" = 0.5, "Design-based" = 0.5, "True" = 1))
 ```
-
-
 ```{r}
 index %>% 
   plot_ly(x = ~year, color = ~type, legendgroup = ~type) %>% 
   add_ribbons(ymin = ~lwr, ymax = ~upr, line = list(width = 0), showlegend = FALSE) %>% 
   add_lines(y = ~N)
 ```
-
