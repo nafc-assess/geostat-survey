@@ -1,6 +1,6 @@
 ---
-title: "Phase 1"
-output: html_document
+title: "Introduction to SimSurvey and sdmTMB"
+output: html_notebook
 ---
 
 ```{r setup, include=FALSE}
@@ -12,12 +12,28 @@ library(ggplot2)
 
 # Simulate an age-structured, spatially-correlated population
 
-`sim_distribution()` is used to distribute a population simulated using `sim_abundance()` throughout a grid. 
+SimSurvey uses the exponential decay cohort model,
 
-- Key arguments:
+$$N_{a,y}=N_{a-1,y-1}exp(-Z_{a-1,y-1})$$ in which abundance at age a in year y is equal to that cohort abundance in the previous year times the survival rate, which is expressed in terms of the total mortality rate (Z). 
+
+First year filled via exponential decay $N_{a,1} = N_{a-1,1} e^{-Z_{a-1,1}}$. 
+
+Numbers_at_age 1 (i.e. recruits) vary around a baseline value, $log(N_{1,y}) = log(μ_r) + ϵ_y$, where the error around the recruitment process was set to follow a random walk,$ ϵ_y \sim N(ϵ_{y-1},\sigma^2_r)$ or uncorrelated recruitment values. 
+
+Total mortality correlated across ages and years $log(Z_{a,y}) = log(\mu_Z) + \delta_{a,y}$, where $\delta_{a,y} \sim N(0, \Sigma_{a,y})$, Using covariance $\Sigma_{a,y}$
+
+
+After similating the an age-structured population, `sim_distribution()` is used to distribute a population simulated using `sim_abundance()` throughout a grid. 
+
+Distribute population through space and add spatial-temporal noise:
+    - $log(N_{a,y,s}) = log(N_{a,y}) + \eta_{a,y,s}$
+    - $\eta_{a,y,s}$ includes parabolic relationship with depth and covariance between ages, years and space
+        - $\eta_{a,y,s} = \frac{(d_s - \mu_{d}) ^ 2}{2 \sigma_d^2} + \xi_{a,y,s}$
+        - $\xi_{a,y,s}$ is a combination of Matérn covariance and the age-year covariance described in Cadigan 2016.
+
+- Key arguments of `sim_distribution()`:
 
 1. `sim` -- A list with abundance details like produced by `sim_abundance()`
-  
   - `ages`, `years` -- supply vectors of ages and years to simulate across
   - `R`, `Z`, `N0`, `growth` -- supply closures such as `sim_R()`, `sim_Z()`, `sim_N0()` and `sim_vonB()`
   
@@ -75,7 +91,6 @@ pop <- sim_abundance(ages = 1:20, #fish age vector
   
 ```
 Some graphs:
-
 ```{r}
 plot_trend(pop)
 ```
@@ -83,6 +98,7 @@ plot_trend(pop)
 ```{r}
 plot_surface(pop)
 ```
+
 ```{r}
 library(dplyr)
 xy_sim <- as_tibble(pop$grid_xy)
@@ -101,8 +117,11 @@ ggplot(aes(x, y, fill = log(N + 1))) +
   scale_fill_viridis_c()
 
 ```
+
+The plot of the distribution of N of an age in a year in a cell (interactive plots with an Age-Year slider)
+
 ```{r}
-# distribution of N of an age in a year in a cell (interactive plots with an Age-Year slider)
+# 
 
 plot_distribution2 <-
 function (sim, ages = 1:10, years = 1:10, type = "contour", 
@@ -159,6 +178,7 @@ function (sim, ages = 1:10, years = 1:10, type = "contour",
 plot_distribution2(pop, ages = 1:20, years = 1:20, type = "heatmap")
 
 ```
+
 # Survey the Simulated population
 
 `sim_survey()` function applies stratified random sampling of a survey with a catchability defined by a logistic curve [`sim_logistic()`].
@@ -185,6 +205,7 @@ survey <- sim_survey(
 plot_survey(survey, which_year = 2, which_sim = 1) # plotting 1st set of 2nd year
 
 ```
+
 # Fitting a geostatistical spatiotemporal model
 
 sdmTMB is an R package for fast and flexible fitting of spatiotemporal species distribution GLMMs with TMB
@@ -203,6 +224,7 @@ sdmTMB is an R package for fast and flexible fitting of spatiotemporal species d
 ```{r}
 library(sdmTMB)
 ```
+
 ## Creating an SPDE (Stochastic partial differential equation) mesh object representing spatial "knots" via the INLA R package
 
 The important part of this is coming up with a reasonable resolution of "knots" or representative locations that will be modeled. Values in between these knots will be interpolated with bilinear interpolation along the triangles. This approach greatly increases computational efficiency. Smaller `cutoff` values (in units x-y coordinate units), will generate more knots. More knots will generally make for a better approximation at the expense of fitting time. There are other possible meshes and you can use any mesh from INLA.
@@ -234,6 +256,7 @@ mesh <- sdmTMB::make_mesh(
 
 plot(mesh$mesh)
 ```
+
 ## Fitting a model
 
 - Key arguments:
@@ -262,6 +285,7 @@ tidy(fit, effects = "ran_pars", conf.int = TRUE)
 
 
 ```
+
 ### Residuals
 ```{r}
 dat$resid <- residuals(fit)
@@ -276,6 +300,7 @@ ggplot(dat, aes(x, y, colour = resid, size = abs(resid))) +
 qqnorm(dat$resid)
 abline(a = 0, b = 1)
 ```
+
 ### simulation-based approach for residuals checks
 
 See more: <https://pbs-assess.github.io/sdmTMB/articles/residual-checking.html>.
@@ -302,7 +327,6 @@ sum(sim_fit == 0)/length(sim_fit)
 
 ```
 
-
 - DHARMA plots
 
 ```{r}
@@ -317,6 +341,7 @@ DHARMa::testZeroInflation(fit_dharma)
 DHARMa::plotResiduals(fit_dharma, form = dat$depth)
 
 ```
+
 ## Predicting over the survey domain and calculating an index of abundance
 
 To calculate an index of abundance, first we need to create a grid that covers the entirety of our survey domain. 
@@ -355,6 +380,7 @@ ggplot(index, aes(year, est)) + geom_line() +
   xlab('Year') + ylab('N')
 
 ```
+
 # Combining Design-based and Model-based estimated indices with the "true" known population trajectory
 
 ```{r}
