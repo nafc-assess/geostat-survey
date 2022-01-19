@@ -28,7 +28,7 @@ library(ggplot2)
 4. `depth_par` -- Closure for defining relationship between abundance and depth, like `sim_parabola()`
 
 ```{r}
-set.seed(431)
+set.seed(351)
 pop <- sim_abundance(ages = 1:20, #fish age vector
                      years = 1:20, #year vector
                      Z = sim_Z(log_mean = log(0.6), #Total mortality matrix -- rnorm
@@ -60,7 +60,7 @@ pop <- sim_abundance(ages = 1:20, #fish age vector
                                     method = "spline"), #spline, loess, linear interpolation options
                    ays_covar = sim_ays_covar(range = 300, #adding noise correlated across space, year, and age dimensions -- covariance matrix, higher value higher spatial correlation
                                              phi_age = 0.8, #strong correlation across ages
-                                             phi_year = 0.1),#weak correlation across years
+                                             phi_year = 0.5),#weak correlation across years
                    depth_par = sim_parabola(mu = 200, #defining relationship between abundance and depth, i.e., adding a parabolic depth 'preference', fish prefers occurring around 200 meters 
                                             sigma = 70, plot=TRUE))
 
@@ -164,7 +164,6 @@ plot_distribution2(pop, ages = 1:20, years = 1:20, type = "heatmap")
 `sim_survey()` function applies stratified random sampling of a survey with a catchability defined by a logistic curve [`sim_logistic()`].
 
 ```{r}
-set.seed(34)
 survey <- sim_survey(
   pop, #sim_distribution
   n_sims = 1, # number of survey
@@ -233,7 +232,7 @@ mesh <- sdmTMB::make_mesh(
   #mesh = NULL
 )
 
-plot(mesh)
+plot(mesh$mesh)
 ```
 ## Fitting a model
 
@@ -251,10 +250,16 @@ fit <- sdmTMB(N ~ 0 + as.factor(year) + offset,
               mesh = mesh,
               time = "year",
               family = nbinom2(link = "log"), 
-              #spatial = TRUE,
+              spatial = TRUE,
               spatiotemporal = c("IID"))
 
 print(fit) #summary of the fit
+
+tidy(fit, conf.int = TRUE)
+
+tidy(fit, effects = "ran_pars", conf.int = TRUE)
+#`omega_s` represents the simulated spatial random effects (only if present).
+
 
 ```
 ### Residuals
@@ -287,20 +292,29 @@ fit_dharma <- DHARMa::createDHARMa(
   fittedPredictedResponse = fit$family$linkinv(predict(fit)$est_non_rf) # predicted response
 )
 
+
+# simulate from the model
+sim_fit =  simulate(fit, nsim = 500)
+
+#test whether fitted models are consistent with the observed number of zeros
+sum(dat$N == 0) / length(dat$N)
+sum(sim_fit == 0)/length(sim_fit)
+
 ```
+
 
 - DHARMA plots
 
 ```{r}
-
 plot(fit_dharma)
 
 DHARMa::testResiduals(fit_dharma)
 
-
 DHARMa::testZeroInflation(fit_dharma)
 
 #DHARMa::testSpatialAutocorrelation(fit_dharma, x = dat$x, y = dat$y)
+
+DHARMa::plotResiduals(fit_dharma, form = dat$depth)
 
 ```
 ## Predicting over the survey domain and calculating an index of abundance
