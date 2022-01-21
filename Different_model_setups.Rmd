@@ -218,31 +218,31 @@ sum(sim_fit3 == 0)/length(sim_fit3)
 sum(sim_fit4 == 0)/length(sim_fit4)
 ```
 
-```{r, echo = FALSE}
+```{r}
 # N ~ 0 + as.factor(year) + offset, spatiotemporal = c("IID"))
 DHARMa::testResiduals(fit_dharma) # testUniformity and the testDispersion 
 plot(fit_dharma)
 ```
 
-```{r, echo = FALSE}
+```{r}
 # N ~ 0 + as.factor(year) + offset, spatiotemporal = c("IID")) --- nsim 500
 DHARMa::testResiduals(fit_dharma1) # testUniformity and the testDispersion 
 plot(fit_dharma1)
 ```
 
-```{r, echo = FALSE}
+```{r}
 # N ~ 0 + as.factor(year) + offset, spatiotemporal = c("AR1"))
 DHARMa::testResiduals(fit_dharma2)
 plot(fit_dharma2)
 ```
 
-```{r, echo = FALSE}
+```{r}
 # N ~ 0 + as.factor(year) + offset + s(depth), spatiotemporal = c("IID"))
 DHARMa::testResiduals(fit_dharma3)
 plot(fit_dharma3)
 ```
 
-```{r, echo = FALSE}
+```{r}
 # N ~ 0 + as.factor(year) + offset, spatiotemporal = c("IID")) --- mesh, cutoff 9
 DHARMa::testResiduals(fit_dharma4) # testUniformity and the testDispersion 
 plot(fit_dharma4)
