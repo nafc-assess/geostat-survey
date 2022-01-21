@@ -4,20 +4,19 @@ output:
   html_document:
     df_print: paged
 ---
-1.  Simulating an age-structured, spatially-correlated population
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, eval=FALSE}
 library(tictoc)
-
 library(SimSurvey)
 library(plotly)
 library(ggplot2)
 theme_set(theme_minimal())
 library(tidyverse)
 library(sdmTMB)
+```
 
-
-
+1.  Simulating an age-structured, spatially-correlated population
+```{r}
 set.seed(351)
 pop <- sim_abundance(ages = 1:20, #fish age vector
                      years = 1:20, #year vector
@@ -57,7 +56,7 @@ pop <- sim_abundance(ages = 1:20, #fish age vector
 
 2. Applying stratified random sampling of a survey with a catchability defined by a logistic curve.
 
-```{r, echo=FALSE}
+```{r}
 survey <- sim_survey(
   pop, #sim_distribution
   n_sims = 1, #number of survey
@@ -79,9 +78,9 @@ survey <- sim_survey(
 
 3. Fitting a geostatistical spatiotemporal model
 
-3.1. Creating a data frame by including population survey grids
+   3.1. Creating a data frame by including population survey grids
 
-```{r, echo = FALSE}
+```{r}
 xy <- as_tibble(survey$grid_xy)
 dat <- as_tibble(survey$setdet) %>%
   select(x, y, set, year, N = n, tow_area) %>%
@@ -89,9 +88,9 @@ dat <- as_tibble(survey$setdet) %>%
   mutate(offset = log(tow_area)) #setting up an "offset" variable to represent the tow area
 ```
 
-3.2. Creating a mesh with different cutoff values
+   3.2. Creating a mesh with different cutoff values
 
-```{r, echo = FALSE}
+```{r}
 mesh <- sdmTMB::make_mesh(
   dat, 
   xy_cols = c("x", "y"),
@@ -107,7 +106,7 @@ mesh2 <- sdmTMB::make_mesh(
   dat, 
   xy_cols = c("x", "y"),
   #type = c("kmeans", "cutoff", "cutoff_search"), #Method to create the mesh, default=cutoff
-  cutoff = 9, #The minimum allowed distance between points in the mesh, Smaller `cutoff` values (in units x-y coordinate units), will generate more knots
+  cutoff = 8, #The minimum allowed distance between points in the mesh, Smaller `cutoff` values (in units x-y coordinate units), will generate more knots
   #n_knots, #number of desired knots
   #seed = 42, #Random seed
   #refine = list(min.angle = 21, max.edge = Inf, max.n.strict = -1, max.n = 1000),
@@ -115,9 +114,9 @@ mesh2 <- sdmTMB::make_mesh(
 )
 ```
 
-3.3. Fitting the models
+   3.3. Fitting the models
 
-```{r, echo=TRUE}
+```{r}
 tic()
 fit <- sdmTMB(N ~ 0 + as.factor(year) + offset,
               data = dat,
@@ -128,6 +127,7 @@ fit <- sdmTMB(N ~ 0 + as.factor(year) + offset,
               spatiotemporal = c("IID"))
 toc()
 print(fit)
+
 
 tic()
 fit2 <- sdmTMB(N ~ 0 + as.factor(year) + offset,
@@ -163,7 +163,7 @@ toc()
 print(fit4)
 ```
 
-3.4. Using simulation-based approach for residuals checks
+   3.4. Using simulation-based approach for residuals checks
 
 ```{r}
 #Converting simulated residuals to a DHARMa object
@@ -174,6 +174,14 @@ fit_dharma <- DHARMa::createDHARMa(
   observedResponse = dat$N, 
   fittedPredictedResponse = fit$family$linkinv(predict(fit)$est_non_rf) 
 )
+
+sim_fit1 <- simulate(fit, nsim = 500)
+fit_dharma <- DHARMa::createDHARMa(
+  simulatedResponse =  sim_fit,
+  observedResponse = dat$N, 
+  fittedPredictedResponse = fit$family$linkinv(predict(fit)$est_non_rf) 
+)
+
 sim_fit2 <- simulate(fit2, nsim = 1000) 
 fit_dharma2 <- DHARMa::createDHARMa(
   simulatedResponse =  sim_fit2,
@@ -188,7 +196,7 @@ fit_dharma3 <- DHARMa::createDHARMa(
 )
 
 sim_fit4 <- simulate(fit4, nsim = 1000)
-fit_dharma3 <- DHARMa::createDHARMa(
+fit_dharma4 <- DHARMa::createDHARMa(
   simulatedResponse =  sim_fit4,
   observedResponse = dat$N, 
   fittedPredictedResponse = fit4$family$linkinv(predict(fit4)$est_non_rf) 
@@ -202,6 +210,8 @@ sum(dat$N == 0) / length(dat$N)
 
 sum(sim_fit == 0)/length(sim_fit)
 
+sum(sim_fit1 == 0)/length(sim_fit1)
+
 sum(sim_fit2 == 0)/length(sim_fit2)
 
 sum(sim_fit3 == 0)/length(sim_fit3)
@@ -213,6 +223,12 @@ sum(sim_fit4 == 0)/length(sim_fit4)
 # N ~ 0 + as.factor(year) + offset, spatiotemporal = c("IID"))
 DHARMa::testResiduals(fit_dharma) # testUniformity and the testDispersion 
 plot(fit_dharma)
+```
+
+```{r, echo = FALSE}
+# N ~ 0 + as.factor(year) + offset, spatiotemporal = c("IID")) --- nsim 500
+DHARMa::testResiduals(fit_dharma1) # testUniformity and the testDispersion 
+plot(fit_dharma1)
 ```
 
 ```{r, echo = FALSE}
