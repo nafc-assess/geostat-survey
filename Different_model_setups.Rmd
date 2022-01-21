@@ -4,19 +4,18 @@ output:
   html_document:
     df_print: paged
 ---
-
-```{r, echo=FALSE, eval=FALSE}
+1.  Simulating an age-structured, spatially-correlated population
+```{r}
 library(tictoc)
+
 library(SimSurvey)
 library(plotly)
 library(ggplot2)
 theme_set(theme_minimal())
+
 library(tidyverse)
 library(sdmTMB)
-```
 
-1.  Simulating an age-structured, spatially-correlated population
-```{r}
 set.seed(351)
 pop <- sim_abundance(ages = 1:20, #fish age vector
                      years = 1:20, #year vector
@@ -51,7 +50,7 @@ pop <- sim_abundance(ages = 1:20, #fish age vector
                                              phi_age = 0.8, #strong correlation across ages
                                              phi_year = 0.1),# medium correlation across years
                    depth_par = sim_parabola(mu = 200, #defining relationship between abundance and depth, i.e., adding a parabolic depth 'preference', fish prefers occurring around 200 meters 
-                                            sigma = 70, plot=FALSE))
+                                            sigma = 70, plot=FALSE)) 
 ```
 
 2. Applying stratified random sampling of a survey with a catchability defined by a logistic curve.
@@ -248,29 +247,3 @@ plot(fit_dharma3)
 DHARMa::testResiduals(fit_dharma4) # testUniformity and the testDispersion 
 plot(fit_dharma4)
 ```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
