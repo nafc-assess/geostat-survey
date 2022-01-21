@@ -1,14 +1,16 @@
 ---
 title: "Under survey Inconsistencies"
-output: html_notebook
+output:
+  html_document:
+    df_print: paged
 ---
-
-
 The aim is to compare indices of population abundance from geostatistical model(sdmTMB) with design-based estimates for simulated spatially-correlated populations. 
 
-1. First, let's Simulate a spatial, age-structured population with SimSurvey. It has two sections: modeling a population by using an exponential decay cohort model and distributing this population over an area through space and add spatial-temporal noise. 
+1. First, let's Simulate a spatial, age-structured population with SimSurvey.
 
-```{r}
+```{r, echo=FALSE}
+library(tictoc)
+
 library(SimSurvey)
 library(plotly)
 library(ggplot2)
@@ -53,19 +55,18 @@ pop <- sim_abundance(ages = 1:20, #fish age vector
                                             sigma = 70, plot=FALSE))
 ```
 
-
 2. Applying stratified random sampling of a survey with a catchability defined by a logistic curve.
 
-```{r}
+```{r, echo=FALSE}
 survey <- sim_survey(
   pop, #sim_distribution
-  n_sims = 1, # number of survey
-  q = sim_logistic(k = 2, x0 = 3, plot = TRUE), # function of catchability at age (k= The steepness of the curve, x0= x-value of the sigmoid's midpoint, curve max value=1)
-  #trawl_dim = c(1.5, 0.02), #	Trawl width and distance (default=same units as grid)
-  #resample_cells = FALSE, # Allow resampling of sampling units?
-  binom_error = TRUE, # Impose binomial error? 
-  #min_sets = 2, # Minimum number of sets per strat
-  set_den = 2/1000, ##set per strata ~ strata area with a set density rule, sample size = sum(set numbers per strat) * years 
+  n_sims = 1, #number of survey
+  q = sim_logistic(k = 2, x0 = 3, plot = FALSE), #function of catchability at age (k= The steepness of the curve, x0= x-value of the sigmoid's midpoint, curve max value=1)
+  #trawl_dim = c(1.5, 0.02), #Trawl width and distance (default=same units as grid)
+  #resample_cells = FALSE, #Allow resampling of sampling units?
+  binom_error = TRUE, #Impose binomial error? 
+  #min_sets = 2, #Minimum number of sets per strat
+  set_den = 2/1000, #set per strata ~ strata area with a set density rule, sample size = sum(set numbers per strat) * years 
   #lengths_cap = 500, #Maximum number of lengths measured per set
   #ages_cap = 10,
   #age_sampling = "stratified",
@@ -76,6 +77,32 @@ survey <- sim_survey(
   SimSurvey::run_strat()
 ```
 
+```{r}
+#dropping some survey years
+
+survey_year <- survey$setdet[!(survey$setdet$year %in% c(3,5,13)),]
+
+```
+
+```{r, echo=FALSE}
+#dropping some strata according to the depth (keep only strata with a depth lower than 500) #dropping an area
+
+length(unique(survey_year$strat)) # we have 30 strata 
+
+survey_depth <- survey$setdet[which(survey$setdet$depth <= 500),]
+
+length(unique(survey_depth$strat)) # we have 24 strata 
+
+```
+```{r}
+#dropping some random strata (30 total strata, dropping 3 of them (%10))
+
+#set.seed(1)
+#sample(1:30, 3, replace=F)
+
+survey_strata <- survey$setdet[!(survey$setdet$strat %in% c(25,4,7)),]
+
+```
 
 3. Fitting a geostatistical spatiotemporal model
 
@@ -87,28 +114,52 @@ dat <- as_tibble(survey$setdet) %>%
   select(x, y, set, year, N = n, tow_area) %>%
   left_join(., xy, by = c("x", "y")) %>%
   mutate(offset = log(tow_area)) #setting up an "offset" variable to represent the tow area
+
+dat_year <- as_tibble(survey_year) %>%
+  select(x, y, set, year, N = n, tow_area) %>%
+  left_join(., xy, by = c("x", "y")) %>%
+  mutate(offset = log(tow_area)) #setting up an "offset" variable to represent the tow area
+
+dat_depth <- as_tibble(survey_depth) %>%
+  select(x, y, set, year, N = n, tow_area) %>%
+  left_join(., xy, by = c("x", "y")) %>%
+  mutate(offset = log(tow_area)) #setting up an "offset" variable to represent the tow area
+
+dat_strata <- as_tibble(survey_strata) %>%
+  select(x, y, set, year, N = n, tow_area) %>%
+  left_join(., xy, by = c("x", "y")) %>%
+  mutate(offset = log(tow_area)) #setting up an "offset" variable to represent the tow area
 ```
 
 3.2. Creating a mesh
 
 ```{r}
-
 mesh <- sdmTMB::make_mesh(
   dat, 
   xy_cols = c("x", "y"),
-  #type = c("kmeans", "cutoff", "cutoff_search"), #Method to create the mesh, default=cutoff
-  cutoff = 9, #The minimum allowed distance between points in the mesh, Smaller `cutoff` values (in units x-y coordinate units), will generate more knots
-  #n_knots, #number of desired knots
-  #seed = 42, #Random seed
-  #refine = list(min.angle = 21, max.edge = Inf, max.n.strict = -1, max.n = 1000),
-  #mesh = NULL
-)
+  cutoff = 10)
+
+mesh_year <- sdmTMB::make_mesh(
+  dat_year, 
+  xy_cols = c("x", "y"),
+  cutoff = 10)
+
+mesh_depth <- sdmTMB::make_mesh(
+  dat_depth, 
+  xy_cols = c("x", "y"),
+  cutoff = 10)
+
+mesh_strata <- sdmTMB::make_mesh(
+  dat_strata, 
+  xy_cols = c("x", "y"),
+  cutoff = 10)
+
 ```
 
-3.3. Fitting the model
+3.3. Fitting the models
 
-```{r}
-library(tictoc)
+```{r, echo=TRUE}
+
 library(sdmTMB)
 
 tic()
@@ -120,67 +171,114 @@ fit <- sdmTMB(N ~ 0 + as.factor(year) + offset,
               spatial = TRUE,
               spatiotemporal = c("IID"))
 toc()
+
+tic()
+fit_year <- sdmTMB(N ~ 0 + as.factor(year) + offset,
+              data = dat_year,
+              mesh = mesh_year,
+              time = "year",
+              family = nbinom2(link = "log"), 
+              spatial = TRUE,
+              spatiotemporal = c("IID"))
+toc()
+
+
+tic()
+fit_depth <- sdmTMB(N ~ 0 + as.factor(year) + offset,
+              data = dat_depth,
+              mesh = mesh_depth,
+              time = "year",
+              family = nbinom2(link = "log"), 
+              spatial = TRUE,
+              spatiotemporal = c("IID"))
+toc()
+
+tic()
+fit_strata <- sdmTMB(N ~ 0 + as.factor(year) + offset,
+              data = dat_strata,
+              mesh = mesh_strata,
+              time = "year",
+              family = nbinom2(link = "log"), 
+              spatial = TRUE,
+              spatiotemporal = c("IID"))
+toc()
+
 ```
 
-
-3.4. Checking residuals
-
-```{r}
-dat$resid <- residuals(fit)
-qqnorm(dat$resid)
-abline(a = 0, b = 1)
-```
-3.5. Using simulation-based approach for residuals checks
-
-- Converting simulated residuals to a DHARMa object
-
-To create a DHARMa object, we need simulated response vectors, observed data, and predicted response from the model.
+3.4. Using simulation-based approach for residuals checks
 
 ```{r}
+#Converting simulated residuals to a DHARMa object
 
+sim_fit <- simulate(fit, nsim = 1000) 
 fit_dharma <- DHARMa::createDHARMa(
-  simulatedResponse =  simulate(fit, nsim = 1000),
-  observedResponse = dat$N, # true observations
-  fittedPredictedResponse = fit$family$linkinv(predict(fit)$est_non_rf) # predicted response
+  simulatedResponse =  sim_fit,
+  observedResponse = dat$N, 
+  fittedPredictedResponse = fit$family$linkinv(predict(fit)$est_non_rf) 
 )
 
+sim_fit_year <- simulate(fit_year, nsim = 1000) 
+fit_dharma_year <- DHARMa::createDHARMa(
+  simulatedResponse =  sim_fit_year,
+  observedResponse = dat_year$N, 
+  fittedPredictedResponse = fit_year$family$linkinv(predict(fit_year)$est_non_rf) 
+)
 
-# simulate from the model
-sim_fit =  simulate(fit, nsim = 1000)
+sim_fit_depth <- simulate(fit_depth, nsim = 1000)
+fit_dharma_depth <- DHARMa::createDHARMa(
+  simulatedResponse =  sim_fit_depth,
+  observedResponse = dat_depth$N, 
+  fittedPredictedResponse = fit_depth$family$linkinv(predict(fit_depth)$est_non_rf) 
+)
 
-#test whether fitted models are consistent with the observed number of zeros
+sim_fit_strata <- simulate(fit_strata, nsim = 1000)
+fit_dharma_strata <- DHARMa::createDHARMa(
+  simulatedResponse =  sim_fit_strata,
+  observedResponse = dat_strata$N, 
+  fittedPredictedResponse = fit_strata$family$linkinv(predict(fit_strata)$est_non_rf) 
+)
+```
+
+```{r, echo = TRUE, eval = TRUE}
+#Testing whether fitted models are consistent with the observed number of zeros
+
 sum(dat$N == 0) / length(dat$N)
 sum(sim_fit == 0)/length(sim_fit)
 
+sum(dat_year$N == 0) / length(dat_year$N)
+sum(sim_fit_year == 0)/length(sim_fit_year)
+
+sum(dat_depth$N == 0) / length(dat_depth$N)
+sum(sim_fit_depth == 0)/length(sim_fit_depth)
+
+sum(dat_strata$N == 0) / length(dat_strata$N)
+sum(sim_fit_strata == 0)/length(sim_fit_strata)
 ```
 
-- DHARMA plots
+```{r}
+# N ~ 0 + as.factor(year) + offset, spatiotemporal = c("IID"))
+DHARMa::testResiduals(fit_dharma) # testUniformity and the testDispersion 
+plot(fit_dharma)
+```
+```{r}
+
+DHARMa::testResiduals(fit_dharma_year)
+plot(fit_dharma_year)
+```
 
 ```{r}
 
-plot(fit_dharma)
-
-DHARMa::testResiduals(fit_dharma)
-
-DHARMa::testZeroInflation(fit_dharma)
-
-#DHARMa::testSpatialAutocorrelation(fit_dharma, x = dat$x, y = dat$y)
-#DHARMa::testTemporalAutocorrelation(fit_dharma, time = dat$year)
-
-DHARMa::plotResiduals(fit_dharma, form = dat$depth)
-
-DHARMa::testOutliers(fit_dharma, type = c("binomial"), nBoot = 100, plot = T)
-
-DHARMa::testUniformity(simulationOutput = fit_dharma)
-
+DHARMa::testResiduals(fit_dharma_depth)
+plot(fit_dharma_depth)
 
 ```
 
+```{r}
 
+DHARMa::testResiduals(fit_dharma_strata)
+plot(fit_dharma_strata)
 
-
-
-
+```
 
 
 
