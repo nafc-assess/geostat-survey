@@ -1,5 +1,5 @@
 ---
-title: "Under survey Inconsistencies"
+title: "Testing different model setups"
 output:
   html_document:
     df_print: paged
