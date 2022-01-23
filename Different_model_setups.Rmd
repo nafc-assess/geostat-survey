@@ -15,6 +15,7 @@ theme_set(theme_minimal())
 
 library(tidyverse)
 library(sdmTMB)
+library(DHARMa)
 
 set.seed(351)
 pop <- sim_abundance(ages = 1:20, #fish age vector
@@ -175,7 +176,7 @@ fit_dharma <- DHARMa::createDHARMa(
 )
 
 sim_fit1 <- simulate(fit, nsim = 500)
-fit_dharma <- DHARMa::createDHARMa(
+fit_dharma1 <- DHARMa::createDHARMa(
   simulatedResponse =  sim_fit,
   observedResponse = dat$N, 
   fittedPredictedResponse = fit$family$linkinv(predict(fit)$est_non_rf) 
