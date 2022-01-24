@@ -59,7 +59,7 @@ pop <- sim_abundance(ages = 1:20, #fish age vector
 ```{r}
 survey <- sim_survey(
   pop, #sim_distribution
-  n_sims = 3, #number of survey
+  n_sims = 1, #number of survey
   q = sim_logistic(k = 2, x0 = 3, plot = FALSE), #function of catchability at age (k= The steepness of the curve, x0= x-value of the sigmoid's midpoint, curve max value=1)
   #trawl_dim = c(1.5, 0.02), #Trawl width and distance (default=same units as grid)
   #resample_cells = FALSE, #Allow resampling of sampling units?
@@ -73,7 +73,8 @@ survey <- sim_survey(
   #age_space_group = "division",
   #light = TRUE
 ) %>% 
-  SimSurvey::run_strat()
+  SimSurvey::run_strat() %>% 
+  SimSurvey::strat_error()
 ```
 
 3. Fitting a geostatistical spatiotemporal model
