@@ -162,6 +162,7 @@ fit4 <- sdmTMB(N ~ 0 + as.factor(year) + offset,
               spatiotemporal = c("IID"))
 toc()
 print(fit4)
+
 ```
 
    3.4. Using simulation-based approach for residuals checks
@@ -249,3 +250,6 @@ plot(fit_dharma3)
 DHARMa::testResiduals(fit_dharma4) # testUniformity and the testDispersion 
 plot(fit_dharma4)
 ```
+
+
+
