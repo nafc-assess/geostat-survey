@@ -49,7 +49,7 @@ pop <- sim_abundance(ages = 1:20, #fish age vector
                                     method = "spline"), #spline, loess, linear interpolation options
                    ays_covar = sim_ays_covar(range = 300, #adding noise correlated across space, year, and age dimensions -- covariance matrix, higher value higher spatial correlation
                                              phi_age = 0.8, #strong correlation across ages
-                                             phi_year = 0.1),# medium correlation across years
+                                             phi_year = 0.1),# low correlation across years
                    depth_par = sim_parabola(mu = 200, #defining relationship between abundance and depth, i.e., adding a parabolic depth 'preference', fish prefers occurring around 200 meters 
                                             sigma = 70, plot=FALSE)) 
 ```
