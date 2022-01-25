@@ -20,7 +20,7 @@ library(tidyverse)
 
 set.seed(351)
 pop <- sim_abundance(ages = 1:20, #fish age vector
-                     years = 1:20, #year vector
+                     years = 1:10, #year vector
                      Z = sim_Z(log_mean = log(0.6), #Total mortality matrix -- rnorm
                                log_sd = 0.1,
                                phi_age = 0.9,
@@ -74,14 +74,24 @@ survey <- sim_survey(
   #age_space_group = "division",
   #light = TRUE
 ) %>% 
-  SimSurvey::run_strat()
+  SimSurvey::run_strat()%>% 
+  SimSurvey::strat_error()
 ```
 
 ```{r}
 #dropping some survey years
+survey_year <- survey$setdet[!(survey$setdet$year %in% c(3,5)),]
 
-survey_year <- survey$setdet[!(survey$setdet$year %in% c(3,5,13)),]
 
+#Stratified analysis after dropping years
+survey_year_s <- survey
+survey_year_s$setdet <- survey_year_s$setdet[!(survey$setdet$year %in% c(3,5)),]
+survey_year_strat<- survey_year_s %>% run_strat()
+
+dim(survey$setdet)
+dim(survey_year_strat$setdet)
+dim(survey$total_strat)
+dim(survey_year_strat$total_strat)
 ```
 
 ```{r, echo=FALSE}
@@ -94,6 +104,7 @@ survey_depth <- survey$setdet[which(survey$setdet$depth <= 500),]
 length(unique(survey_depth$strat)) # we have 24 strata 
 
 ```
+
 ```{r}
 #dropping some random strata (30 total strata, dropping 3 of them (%10))
 
@@ -210,28 +221,28 @@ toc()
 ```{r}
 #Converting simulated residuals to a DHARMa object
 
-sim_fit <- simulate(fit, nsim = 1000) 
+sim_fit <- simulate(fit, nsim = 500) 
 fit_dharma <- DHARMa::createDHARMa(
   simulatedResponse =  sim_fit,
   observedResponse = dat$N, 
   fittedPredictedResponse = fit$family$linkinv(predict(fit)$est_non_rf) 
 )
 
-sim_fit_year <- simulate(fit_year, nsim = 1000) 
+sim_fit_year <- simulate(fit_year, nsim = 500) 
 fit_dharma_year <- DHARMa::createDHARMa(
   simulatedResponse =  sim_fit_year,
   observedResponse = dat_year$N, 
   fittedPredictedResponse = fit_year$family$linkinv(predict(fit_year)$est_non_rf) 
 )
 
-sim_fit_depth <- simulate(fit_depth, nsim = 1000)
+sim_fit_depth <- simulate(fit_depth, nsim = 500)
 fit_dharma_depth <- DHARMa::createDHARMa(
   simulatedResponse =  sim_fit_depth,
   observedResponse = dat_depth$N, 
   fittedPredictedResponse = fit_depth$family$linkinv(predict(fit_depth)$est_non_rf) 
 )
 
-sim_fit_strata <- simulate(fit_strata, nsim = 1000)
+sim_fit_strata <- simulate(fit_strata, nsim = 500)
 fit_dharma_strata <- DHARMa::createDHARMa(
   simulatedResponse =  sim_fit_strata,
   observedResponse = dat_strata$N, 
@@ -256,35 +267,129 @@ sum(sim_fit_strata == 0)/length(sim_fit_strata)
 ```
 
 ```{r}
-# N ~ 0 + as.factor(year) + offset, spatiotemporal = c("IID"))
 DHARMa::testResiduals(fit_dharma) # testUniformity and the testDispersion 
 plot(fit_dharma)
 ```
-```{r}
 
+```{r}
 DHARMa::testResiduals(fit_dharma_year)
 plot(fit_dharma_year)
 ```
 
 ```{r}
-
 DHARMa::testResiduals(fit_dharma_depth)
 plot(fit_dharma_depth)
+```
+
+```{r}
+DHARMa::testResiduals(fit_dharma_strata)
+plot(fit_dharma_strata)
+```
+
+4. Predicting over the survey domain and calculating an index of abundance
+
+4.1 To calculate an index of abundance, first we need to create a grid that covers the entirety of our survey domain. 
+
+```{r}
+library(tidyverse)
+grid_dat <- as_tibble(select(survey$grid_xy, x, y, depth)) %>% distinct()
+grid_dat <- purrr::map_dfr(sort(unique(dat$year)), ~ bind_cols(grid_dat, year = .))
+grid_dat$offset <- mean(dat$offset)
+grid_dat$area <-survey$setdet$cell_area[1]/survey$setdet$tow_area[1]
+
+grid_dat_depth <- as_tibble(select(survey_depth, x, y, depth)) %>% distinct()
+grid_dat_depth <- purrr::map_dfr(sort(unique(dat_depth$year)), ~ bind_cols(grid_dat_depth, year = .))
+grid_dat_depth$offset <- mean(dat_depth$offset)
+grid_dat_depth$area <- survey_depth$cell_area[1]/survey_depth$tow_area[1]
+
+grid_dat_year <- as_tibble(select(survey_year, x, y, depth)) %>% distinct()
+grid_dat_year <- purrr::map_dfr(sort(unique(dat_year$year)), ~ bind_cols(grid_dat_year, year = .))
+grid_dat_year$offset <- mean(dat_year$offset)
+grid_dat_year$area <- survey_year$cell_area[1]/survey_year$tow_area[1]
+
+grid_dat_strata <- as_tibble(select(survey_strata, x, y, depth)) %>% distinct()
+grid_dat_strata <- purrr::map_dfr(sort(unique(dat_strata$year)), ~ bind_cols(grid_dat_strata, year = .))
+grid_dat_strata$offset <- mean(dat_strata$offset)
+grid_dat_strata$area <- survey_strata$cell_area[1]/survey_strata$tow_area[1]
+```
+
+4.2 Prediction
+
+```{r}
+pred <- predict(fit, 
+                newdata = grid_dat, 
+                return_tmb_object = TRUE, 
+                area = grid_dat$area) 
+
+pred_depth <- predict(fit_depth, 
+                newdata = grid_dat_depth, 
+                return_tmb_object = TRUE, 
+                area = grid_dat_depth$area) 
+
+pred_year <- predict(fit_year, 
+                newdata = grid_dat_year, 
+                return_tmb_object = TRUE, 
+                area = grid_dat_year$area) 
+
+pred_strata <- predict(fit_strata, 
+                newdata = grid_dat_strata, 
+                return_tmb_object = TRUE,
+                area = grid_dat_strata$area)
+```
+
+4.3. Summing up the abundance in all of the grid cells and calculates standard errors on the result
+
+```{r}
+index <- get_index(pred)
+index_depth <- get_index(pred_depth)
+index_year <- get_index(pred_year)
+index_strata <- get_index(pred_strata)
+```
+
+5. Combining Design-based and Model-based estimated indices with the "true" known population trajectory
+
+```{r}
+true_abund <- tibble(year = unique(dat$year), N = as.numeric(colSums(survey$I))) %>%
+  mutate(type = "True")
+
+strat_abund <- tibble::as_tibble(survey$total_strat) %>% 
+  mutate(N = total, type = "Design-based") %>% 
+  select(year, N, type)
+
+strat_year_abundance <-tibble::as_tibble(survey_year_strat$total_strat) %>% 
+  mutate(N = total, type = "Design-based after dropping years") %>% 
+  select(year, N, type)
+
+indexc <- index %>%
+  mutate(type = "Model-based", N = est) %>%
+  bind_rows(true_abund) %>%
+  bind_rows(strat_abund)
+
+indexc_year <- index_year %>%
+  mutate(type = "MB 2 years dropped", N = est) %>%
+  bind_rows(true_abund) %>%
+  bind_rows(strat_year_abundance)
+```
+
+
+```{r}
+
+indexc %>% 
+  plot_ly(x = ~year, color = ~type, legendgroup = ~type) %>% 
+  add_ribbons(ymin = ~lwr, ymax = ~upr, line = list(width = 0), showlegend = FALSE) %>% 
+  add_lines(y = ~N)
+
 
 ```
 
 ```{r}
 
-DHARMa::testResiduals(fit_dharma_strata)
-plot(fit_dharma_strata)
+indexc_year %>% 
+  plot_ly(x = ~year, color = ~type, legendgroup = ~type) %>% 
+  add_ribbons(ymin = ~lwr, ymax = ~upr, line = list(width = 0), showlegend = FALSE) %>% 
+  add_lines(y = ~N)
 
 ```
-
-
-
-
-
-
 
 
 
