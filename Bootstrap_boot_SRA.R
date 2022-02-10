@@ -146,7 +146,6 @@ boot_wrapper <- function(dat, reps) {
 
 #### Stratified bootstrapping
 
-
 set.seed(15)
 boot_abund <- boot_wrapper(survey$setdet, 2000)
 
@@ -154,6 +153,7 @@ boot_abund
 strat_abund
 
 ### Let's make a graph
+
 boot_abund_i <- boot_abund %>%
   mutate(N = mean_boot, upr =upr, lwl = lwr, type = "Bootstrap") %>%
   select(year, N, type, lwl, upr)
