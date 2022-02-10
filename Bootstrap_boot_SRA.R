@@ -77,15 +77,15 @@ survey_year1 <- subset(survey$setdet, year==1)
 # Samples are in stratum-level n (number of fish) meanYh = mean(n)
 # To calculate to total number of fish in the area, we need sumYst := N * meanYst
 # meanYst = sum(Wh * meanYh)
-# Wh = strat_area/(1.5 * 0.02)
+# Wh = strat_area/(1.5 * 0.02)/N
 # N = sum(Nh)
 
 #### The calculation
 survey_year1%>%
   ### stratum level
   group_by(year, strat, strat_area) %>%
-  summarise(meanYh = mean(n), sumYh = sum(n), nh=n(), .groups = "drop_last") %>%
-  mutate(Nh = strat_area/(1.5 * 0.02)) %>%
+  summarise(meanYh = mean(n), .groups = "drop_last") %>% # mean(count of fish) in a stratum in a year
+  mutate(Nh = strat_area/(1.5 * 0.02)) %>% # area size of the sampling unit in a stratum
   group_by(year) %>% #each year grouping for sum(Nh)
   mutate(N = sum(Nh), Wh = Nh/N, WhmeanYh = Wh * meanYh)%>%
   ### year level
@@ -97,7 +97,7 @@ sumYst <- function(dat, i = seq_len(nrow(dat))) {
   dat[i, ] %>%
     ### stratum level
     group_by(year, strat, strat_area) %>%
-    summarise(meanYh = mean(n), sumYh = sum(n), nh=n(), .groups = "drop_last") %>%
+    summarise(meanYh = mean(n), .groups = "drop_last") %>%
     mutate(Nh = strat_area/(1.5 * 0.02)) %>%
     group_by(year) %>%
     mutate(N = sum(Nh), Wh = Nh/N, WhmeanYh = Wh * meanYh)%>%
@@ -116,7 +116,7 @@ b <- boot(survey$setdet, statistic = sumYst, strata = survey$setdet$strat, R = 2
 #b$t, index is year level, index=1 means first year
 #R= 1000 didn't work, "with a small number of replications, empinf sometimes fails and returns a vector of NA values" issue
 
-bci_1 <- boot.ci(b, index = 1, conf = 0.95, type = "bca") # index=1 means first year
+bci_1 <- boot.ci(b, index = 1, conf = 0.95, type = "bca") # index=1 means the first year
 
 #### Boot function
 
@@ -168,8 +168,4 @@ index %>%
   add_ribbons(ymin = ~lwl, ymax = ~upr, line = list(width = 0), showlegend = FALSE) %>%
   add_lines(y = ~N)
 
-
-
-
-
-
+###
