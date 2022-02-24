@@ -160,7 +160,7 @@ setdet <- map(survey, function(x) {pluck(x, 'setdet')})
 # toc()
 
 tic()
-boot_index <- furrr::future_map(setdet, boot_wrapper, reps=2000, .options = furrr::furrr_options(seed = TRUE, packages = "SimSurvey"))
+boot_index <- furrr::future_map(setdet, boot_wrapper, reps=2000, .options = furrr::furrr_options(seed = TRUE))
 toc()
 
 
