@@ -1,22 +1,17 @@
 
 ## Packages
 library(dplyr)
-
 library(SimSurvey)
-
 library(sdmTMB)
-
 library(tidyr)
-
 library(future)
-
 library(purrr)
-
 library(tictoc)
 
 plan(multisession, workers = floor(availableCores()/2))
 
 # Population
+set.seed(1)
 
 population <- function(iter) {
   set.seed(iter * 10)
@@ -177,7 +172,7 @@ dat <- as_tibble(x$setdet) %>%
 mesh <- sdmTMB::make_mesh(
   dat,
   xy_cols = c("x", "y"),
-  cutoff = 5)
+  cutoff = 20)
 
 fit <- sdmTMB(N ~ 0 + as.factor(year) + offset,
               data = dat,
@@ -200,6 +195,10 @@ pred <- predict(fit,
 ## Model-based indices
 
 index <- get_index(pred)
+
+index <- index %>%
+  mutate(type = "IID", N = est)
+
 return(index)
 }
 
@@ -210,4 +209,5 @@ return(index)
 tic()
 model_index <- furrr::future_map(survey, sdm, .options = furrr::furrr_options(seed = TRUE))
 toc()
+
 
