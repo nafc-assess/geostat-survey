@@ -98,6 +98,22 @@ tic()
 survey <- furrr::future_map(sim, survey, .options = furrr::furrr_options(seed = TRUE, packages = "SimSurvey"))
 toc()
 
+############# True abundance
+
+true_index <- map(seq_along(survey), function(i){
+  survey[[i]]$setdet %>%
+    group_by(year) %>%
+    summarise(N = sum(N)) %>%
+    mutate(type= "true")})
+
+for( i in seq_along(true_index)){
+  true_index[[i]]$iter <- as.numeric(i)
+}
+
+true_index2 <- as.data.frame(do.call(rbind, true_index))
+
+true_index2$type <- NULL
+
 ############# Design-based index
 
 design <- function(x) {
@@ -118,6 +134,7 @@ design_index <- map(seq_along(design), function(i){
 
 for( i in seq_along(design_index)){
   design_index[[i]]$iter <- as.numeric(i)
+  design_index[[i]]$true <- true_index[[i]]$N
 }
 
 design_index2 <- as.data.frame(do.call(rbind, design_index))
@@ -173,6 +190,7 @@ toc()
 
 for( i in seq_along(boot_index)){
   boot_index[[i]]$iter <- as.numeric(i)
+  boot_index[[i]]$true <- true_index[[i]]$N
 }
 
 boot_index2 <- as.data.frame(do.call(rbind, boot_index))
@@ -276,8 +294,6 @@ tic()
 sdm_prediction_AR1 <- furrr::future_map2(sdm_AR1, sdm_newdata, sdm_prediction_AR1_fn)
 toc()
 
-### index calculation
-
 sdm_index_IID_fn <- function(x){
   index_IID <- get_index(x, bias_correct = TRUE) %>%
     mutate(type = "IID", N = est)
@@ -289,6 +305,7 @@ toc()
 
 for( i in seq_along(sdm_index_IID)){
   sdm_index_IID[[i]]$iter <- as.numeric(i)
+  sdm_index_IID[[i]]$true <- true_index[[i]]$N
 }
 sdm_index_IID_2 <- as.data.frame(do.call(rbind, sdm_index_IID))
 sdm_index_IID_2$scenario <- "base"
@@ -305,25 +322,11 @@ toc()
 
 for( i in seq_along(sdm_index_AR1)){
   sdm_index_AR1[[i]]$iter <- as.numeric(i)
+  sdm_index_AR1[[i]]$true <- true_index[[i]]$N
 }
 sdm_index_AR1_2 <- as.data.frame(do.call(rbind, sdm_index_AR1))
 sdm_index_AR1_2$scenario <- "base"
 
-############# True abundance
-
-true_index <- map(seq_along(survey), function(i){
-  survey[[i]]$setdet %>%
-    group_by(year) %>%
-    summarise(N = sum(N)) %>%
-    mutate(type= "True")})
-
-for( i in seq_along(true_index)){
-  true_index[[i]]$iter <- as.numeric(i)
-}
-
-true_index2 <- as.data.frame(do.call(rbind, true_index))
-
-true_index2$type <- NULL
 
 ############# Combining results
 
@@ -336,7 +339,7 @@ str(sdm_index_AR1_2)
 result_base <- bind_rows(design_index2, boot_index2, sdm_index_IID_2, sdm_index_AR1_2)
 
 result_base %>%
-  filter(type!="True")%>%
+  filter(type!="true")%>%
 ggplot(aes(year, N, group = type)) +
   geom_line(aes(colour = type), size=1) +
   facet_grid(iter~factor(type, levels=c('Design-based','Bootstrapped','IID','AR1')),  scales = "free_y")+
