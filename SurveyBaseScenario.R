@@ -1,5 +1,6 @@
 
-## Packages
+#############  Packages
+
 library(dplyr)
 library(SimSurvey)
 library(sdmTMB)
@@ -7,10 +8,12 @@ library(tidyr)
 library(future)
 library(purrr)
 library(tictoc)
+library(ggplot2)
 
 plan(multisession, workers = floor(availableCores()/2))
 
-# Population
+#############  Population
+
 set.seed(1)
 
 population <- function(iter) {
@@ -44,7 +47,7 @@ tic()
 pop <- furrr::future_map(seq_len(6), population, .options = furrr::furrr_options(seed = TRUE, packages = "SimSurvey"))
 toc()
 
-# Population distribution
+############# Population distribution
 
 distribution <- function(x) {
   sim_distribution(x,
@@ -67,8 +70,6 @@ distribution <- function(x) {
                                             sigma = 0.25, plot=FALSE, log_space = TRUE))
 }
 
-#a <- distribution(pop[[1]])
-
 # tic()
 # purrr::map(pop, distribution)
 # toc()
@@ -77,8 +78,7 @@ tic()
 sim <- furrr::future_map(pop, distribution, .options = furrr::furrr_options(seed = TRUE, packages = "SimSurvey"))
 toc()
 
-
-# Survey
+############# Survey
 
 survey <-  function(x) {
   sim_survey(x,
@@ -99,7 +99,7 @@ tic()
 survey <- furrr::future_map(sim, survey, .options = furrr::furrr_options(seed = TRUE, packages = "SimSurvey"))
 toc()
 
-# Design-based index
+############# Design-based index
 
 design <- function(x) {
   run_strat(x) }
@@ -112,7 +112,19 @@ tic()
 design <- furrr::future_map(survey, design, .options = furrr::furrr_options(seed = TRUE, packages = "SimSurvey"))
 toc()
 
-# Bootstrap
+design_index <- map(seq_along(design), function(i){
+  design[[i]]$total_strat %>%
+    mutate(N = total, upr =total_ucl, lwr = total_lcl, type = "Design-based") %>%
+    select(year, N, type, lwr, upr)})
+
+for( i in seq_along(design_index)){
+  design_index[[i]]$iter <- as.numeric(i)
+}
+
+design_index2 <- as.data.frame(do.call(rbind, design_index))
+design_index2$scenario <- "base"
+
+############# Bootstrapped index
 
 sumYst <- function(dat, i = seq_len(nrow(dat))) {
   dat[i, ] %>%
@@ -160,7 +172,18 @@ boot_index <- furrr::future_map(setdet, boot_wrapper, reps=2000, .options = furr
 toc()
 
 
-## sdmTMB
+for( i in seq_along(boot_index)){
+  boot_index[[i]]$iter <- as.numeric(i)
+}
+
+boot_index2 <- as.data.frame(do.call(rbind, boot_index))
+boot_index2$scenario <- "base"
+
+boot_index2 <- boot_index2 %>% select(year, mean_boot, lwr, upr, type, iter, scenario) %>%
+  rename(N  = mean_boot)
+
+
+############# sdmTMB
 
 sdm <- function(x) {
 
@@ -206,7 +229,6 @@ pred_AR1 <- predict(fit_AR1,
                 return_tmb_object = TRUE,
                 area = grid_dat$area)
 
-## Model-based indices
 
 index_IID <- get_index(pred_IID) %>%
 mutate(type = "IID", N = est)
@@ -229,10 +251,14 @@ tic()
 model_index <- furrr::future_map(survey, sdm, .options = furrr::furrr_options(seed = TRUE))
 toc()
 
+for( i in seq_along(model_index)){
+  model_index[[i]]$iter <- as.numeric(i)
+}
+model_index2 <- as.data.frame(do.call(rbind, model_index))
+model_index2$scenario <- "base"
 
-#############
+############# True abundance
 
-# True abundance
 true_index <- map(seq_along(survey), function(i){
   survey[[i]]$setdet %>%
     group_by(year) %>%
@@ -245,59 +271,23 @@ for( i in seq_along(true_index)){
 
 true_index2 <- as.data.frame(do.call(rbind, true_index))
 
-# Design based
+true_index2_no_type$type <- NULL
 
-design_index <- map(seq_along(design), function(i){
-  design[[i]]$total_strat %>%
-    mutate(N = total, upr =total_ucl, lwr = total_lcl, type = "Design-based") %>%
-    select(year, N, type, lwr, upr)})
+############# Combining results
 
-for( i in seq_along(design_index)){
-  design_index[[i]]$iter <- as.numeric(i)
-}
-
-design_index2 <- as.data.frame(do.call(rbind, design_index))
-design_index2$scenario <- "base"
-
-# bootstapped
-
-for( i in seq_along(boot_index)){
-  boot_index[[i]]$iter <- as.numeric(i)
-}
-
-boot_index2 <- as.data.frame(do.call(rbind, boot_index))
-boot_index2$scenario <- "base"
-
-boot_index2 <- boot_index2 %>% select(year, mean_boot, lwr, upr, type, iter, scenario) %>%
-  rename(N  = mean_boot)
-
-# model index
-
-for( i in seq_along(model_index)){
-  model_index[[i]]$iter <- as.numeric(i)
-}
-model_index2 <- as.data.frame(do.call(rbind, model_index))
-model_index2$scenario <- "base"
-
-#############
 str(true_index2)
 str(design_index2)
 str(boot_index2)
 str(model_index2)
 
-ensamb <- bind_rows(true_index2, design_index2, boot_index2, model_index2)
+result_base <- bind_rows(true_index2, design_index2, boot_index2, model_index2)
 
-true_db <- ensamb[ensamb$type == "True",]
-true_db$type <- NULL
-
-library(ggplot2)
-
-ensamb %>%
+result_base %>%
   filter(type!="True")%>%
 ggplot(aes(year, N, group = type)) +
   geom_line(aes(colour = type), size=1) +
   facet_grid(iter~type,  scales = "free_y")+
-  geom_line(aes(year, N), size=1, data= true_db, inherit.aes = FALSE) +
+  geom_line(aes(year, N), size=1, data= true_index2_no_type, inherit.aes = FALSE) +
   geom_ribbon(aes(ymin = lwr, ymax = upr), alpha = 0.3)+
   labs(x = "Year", y = "N", colour = "type", fill = "type", size = "type")+
   #facet_wrap(~iter)+
