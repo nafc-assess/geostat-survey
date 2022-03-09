@@ -1,4 +1,3 @@
-
 #############  Packages
 
 library(dplyr)
@@ -168,7 +167,7 @@ setdet <- map(survey, function(x) {pluck(x, 'setdet')})
 # toc()
 
 tic()
-boot_index <- furrr::future_map(setdet, boot_wrapper, reps=2000, .options = furrr::furrr_options(seed = TRUE))
+boot_index <- furrr::future_map(setdet, boot_wrapper, reps=1000, .options = furrr::furrr_options(seed = TRUE))
 toc()
 
 
@@ -184,78 +183,131 @@ boot_index2 <- boot_index2 %>% select(year, mean_boot, lwr, upr, type, iter, sce
 
 
 ############# sdmTMB
+sdm_data_fn <- function(x) {
 
-sdm <- function(x) {
-
-xy <- as_tibble(x$grid_xy)
-dat <- as_tibble(x$setdet) %>%
-  dplyr::select(x, y, set, year, N = n, tow_area) %>%
-  left_join(., xy, by = c("x", "y")) %>%
-  mutate(offset = log(tow_area))
-
-mesh <- sdmTMB::make_mesh(
-  dat,
-  xy_cols = c("x", "y"),
-  cutoff = 20)
-
-fit_IID <- sdmTMB(N ~ 0 + as.factor(year) + offset,
-              data = dat,
-              mesh = mesh,
-              time = "year",
-              family = nbinom2(link = "log"),
-              spatial = TRUE,
-              spatiotemporal = "IID")
-
-fit_AR1 <- sdmTMB(N ~ 0 + as.factor(year) + offset,
-               data = dat,
-               mesh = mesh,
-               time = "year",
-               family = nbinom2(link = "log"),
-               spatial = TRUE,
-               spatiotemporal = c("AR1"))
-
-grid_dat <- as_tibble(dplyr::select(x$grid_xy, x, y, depth)) %>% distinct()
-grid_dat <- purrr::map_dfr(sort(unique(dat$year)), ~ bind_cols(grid_dat, year = .))
-grid_dat$offset <- mean(dat$offset)
-grid_dat$area <-x$setdet$cell_area[1]/x$setdet$tow_area[1]
-
-pred_IID <- predict(fit_IID,
-                newdata = grid_dat,
-                return_tmb_object = TRUE,
-                area = grid_dat$area)
-
-pred_AR1 <- predict(fit_AR1,
-                newdata = grid_dat,
-                return_tmb_object = TRUE,
-                area = grid_dat$area)
-
-
-index_IID <- get_index(pred_IID) %>%
-mutate(type = "IID", N = est)
-
-index_AR1 <- get_index(pred_AR1) %>%
-  mutate(type = "AR1", N = est)
-
-index_sdm <- index_IID %>%
-  bind_rows(index_AR1)
-
-return(index_sdm)
-
+  xy <- as_tibble(x$grid_xy)
+  dat <- as_tibble(x$setdet) %>%
+    dplyr::select(x, y, set, year, N = n, tow_area) %>%
+    left_join(., xy, by = c("x", "y")) %>%
+    mutate(offset = log(tow_area))
 }
-
-# tic()
-# purrr::map(survey, sdm)
-# toc()
 
 tic()
-model_index <- furrr::future_map(survey, sdm, .options = furrr::furrr_options(seed = TRUE))
+sdm_data <- furrr::future_map(survey, sdm_data_fn, .options = furrr::furrr_options(seed = TRUE))
 toc()
 
-for( i in seq_along(model_index)){
-  model_index[[i]]$iter <- as.numeric(i)
+mesh_sdm_fn <- function(sdm_data){
+  mesh <- sdmTMB::make_mesh(
+    sdm_data,
+    xy_cols = c("x", "y"),
+    cutoff = 40)
 }
-model_index2 <- as.data.frame(do.call(rbind, model_index))
-model_index2$scenario <- "base"
+
+tic()
+mesh_sdm <- furrr::future_map(sdm_data, mesh_sdm_fn, .options = furrr::furrr_options(seed = TRUE))
+toc()
+
+sdm_IID_fn <- function(x, y){
+
+  fit_IID <- sdmTMB(N ~ 0 + as.factor(year) + offset,
+                    data = x,
+                    mesh = y,
+                    time = "year",
+                    family = nbinom2(link = "log"),
+                    spatial = TRUE,
+                    spatiotemporal = "IID")
+}
+
+tic()
+sdm_IID <- furrr::future_map2(sdm_data, mesh_sdm, sdm_IID_fn)
+toc()
+
+
+sdm_AR1_fn <- function(x, y) {
+
+  fit_AR1 <- sdmTMB(N ~ 0 + as.factor(year) + offset,
+                    data = x,
+                    mesh = y,
+                    time = "year",
+                    family = nbinom2(link = "log"),
+                    spatial = TRUE,
+                    spatiotemporal = c("AR1"))
+}
+
+tic()
+sdm_AR1 <- furrr::future_map2(sdm_data, mesh_sdm, sdm_AR1_fn)
+toc()
+
+sdm_newdata_fn <- function(survey, sdm_data) {
+
+  grid_dat <- as_tibble(dplyr::select(survey$grid_xy, x, y, depth)) %>% distinct()
+  grid_dat <- purrr::map_dfr(sort(unique(sdm_data$year)), ~ bind_cols(grid_dat, year = .))
+  grid_dat$offset <- mean(sdm_data$offset)
+  grid_dat$area <-survey$setdet$cell_area[1]/survey$setdet$tow_area[1]
+  return(grid_dat)
+}
+
+tic()
+sdm_newdata <- furrr::future_map2(survey, sdm_data, sdm_newdata_fn)
+toc()
+
+
+sdm_prediction_IID_fn <- function(x, y){
+
+  pred_IID <- predict(x,
+                      newdata = y,
+                      return_tmb_object = TRUE,
+                      area = y$area)
+}
+
+tic()
+sdm_prediction_IID <- furrr::future_map2(sdm_IID, sdm_newdata, sdm_prediction_IID_fn)
+toc()
+
+
+sdm_prediction_AR1_fn <- function(x, y){
+  pred_AR1 <- predict(x,
+                      newdata = y,
+                      return_tmb_object = TRUE,
+                      area = y$area)
+}
+
+tic()
+sdm_prediction_AR1 <- furrr::future_map2(sdm_AR1, sdm_newdata, sdm_prediction_AR1_fn)
+toc()
+
+### index calculation
+
+sdm_index_IID_fn <- function(x){
+  index_IID <- get_index(x, bias_correct = TRUE) %>%
+    mutate(type = "IID", N = est)
+}
+
+tic()
+sdm_index_IID <- furrr::future_map(sdm_prediction_IID, sdm_index_IID_fn)
+toc()
+
+for( i in seq_along(sdm_index_IID)){
+  sdm_index_IID[[i]]$iter <- as.numeric(i)
+}
+sdm_index_IID_2 <- as.data.frame(do.call(rbind, sdm_index_IID))
+sdm_index_IID_2$scenario <- "base"
+
+
+sdm_index_AR1_fn <- function(x){
+  index_AR1 <- get_index(x, bias_correct = TRUE) %>%
+    mutate(type = "AR1", N = est)
+}
+
+tic()
+sdm_index_AR1 <- furrr::future_map(sdm_prediction_AR1, sdm_index_AR1_fn)
+toc()
+
+for( i in seq_along(sdm_index_AR1)){
+  sdm_index_AR1[[i]]$iter <- as.numeric(i)
+}
+sdm_index_AR1_2 <- as.data.frame(do.call(rbind, sdm_index_AR1))
+sdm_index_AR1_2$scenario <- "base"
 
 ############# True abundance
 
@@ -271,25 +323,25 @@ for( i in seq_along(true_index)){
 
 true_index2 <- as.data.frame(do.call(rbind, true_index))
 
-true_index2_no_type$type <- NULL
+true_index2$type <- NULL
 
 ############# Combining results
 
 str(true_index2)
 str(design_index2)
 str(boot_index2)
-str(model_index2)
+str(sdm_index_IID_2)
+str(sdm_index_AR1_2)
 
-result_base <- bind_rows(true_index2, design_index2, boot_index2, model_index2)
+result_base <- bind_rows(design_index2, boot_index2, sdm_index_IID_2, sdm_index_AR1_2)
 
 result_base %>%
   filter(type!="True")%>%
 ggplot(aes(year, N, group = type)) +
   geom_line(aes(colour = type), size=1) +
-  facet_grid(iter~type,  scales = "free_y")+
-  geom_line(aes(year, N), size=1, data= true_index2_no_type, inherit.aes = FALSE) +
+  facet_grid(iter~factor(type, levels=c('Design-based','Bootstrapped','IID','AR1')),  scales = "free_y")+
+  geom_line(aes(year, N), size=1, data= true_index2, inherit.aes = FALSE) +
   geom_ribbon(aes(ymin = lwr, ymax = upr), alpha = 0.3)+
   labs(x = "Year", y = "N", colour = "type", fill = "type", size = "type")+
   #facet_wrap(~iter)+
-  theme_minimal()+
-  theme(legend.title= "Method")
+  theme_minimal()
