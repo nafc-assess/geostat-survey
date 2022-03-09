@@ -347,4 +347,5 @@ ggplot(aes(year, N, group = type)) +
   geom_ribbon(aes(ymin = lwr, ymax = upr), alpha = 0.3)+
   labs(x = "Year", y = "N", colour = "type", fill = "type", size = "type")+
   #facet_wrap(~iter)+
-  theme_minimal()
+  theme_minimal()+
+  theme(legend.position = "none")
