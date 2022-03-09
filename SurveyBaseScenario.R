@@ -8,6 +8,7 @@ library(future)
 library(purrr)
 library(tictoc)
 library(ggplot2)
+library(data.table)
 
 plan(multisession, workers = floor(availableCores()/2))
 
@@ -117,7 +118,7 @@ true_index2$type <- NULL
 ############# Design-based index
 
 design <- function(x) {
-  run_strat(x) }
+  SimSurvey::run_strat(x) }
 
 # tic()
 # purrr::map(survey, design)
@@ -336,9 +337,9 @@ str(boot_index2)
 str(sdm_index_IID_2)
 str(sdm_index_AR1_2)
 
-result_base <- bind_rows(design_index2, boot_index2, sdm_index_IID_2, sdm_index_AR1_2)
+results_base <- bind_rows(design_index2, boot_index2, sdm_index_IID_2, sdm_index_AR1_2)
 
-result_base %>%
+results_base %>%
   filter(type!="true")%>%
 ggplot(aes(year, N, group = type)) +
   geom_line(aes(colour = type), size=1) +

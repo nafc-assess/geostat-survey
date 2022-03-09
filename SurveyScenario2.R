@@ -230,6 +230,81 @@ boot_index_sc2_50_b <- boot_index_sc2_50_b %>% select(year, mean_boot, lwr, upr,
 
 #################  sdmTMB
 
+### Functions
+
+sdm_data_fn <- function(x) {
+
+  xy <- as_tibble(x$grid_xy)
+  dat <- as_tibble(x$setdet) %>%
+    dplyr::select(x, y, set, year, N = n, tow_area) %>%
+    left_join(., xy, by = c("x", "y")) %>%
+    mutate(offset = log(tow_area))
+}
+
+mesh_sdm_fn <- function(sdm_data){
+  mesh <- sdmTMB::make_mesh(
+    sdm_data,
+    xy_cols = c("x", "y"),
+    cutoff = 40)
+}
+
+sdm_IID_fn <- function(x, y){
+
+  fit_IID <- sdmTMB(N ~ 0 + as.factor(year) + offset,
+                    data = x,
+                    mesh = y,
+                    time = "year",
+                    family = nbinom2(link = "log"),
+                    spatial = TRUE,
+                    spatiotemporal = "IID")
+}
+
+sdm_AR1_fn <- function(x, y) {
+
+  fit_AR1 <- sdmTMB(N ~ 0 + as.factor(year) + offset,
+                    data = x,
+                    mesh = y,
+                    time = "year",
+                    family = nbinom2(link = "log"),
+                    spatial = TRUE,
+                    spatiotemporal = c("AR1"))
+}
+
+sdm_newdata_fn <- function(survey, sdm_data) {
+
+  grid_dat <- as_tibble(dplyr::select(survey$grid_xy, x, y, depth)) %>% distinct()
+  grid_dat <- purrr::map_dfr(sort(unique(sdm_data$year)), ~ bind_cols(grid_dat, year = .))
+  grid_dat$offset <- mean(sdm_data$offset)
+  grid_dat$area <-survey$setdet$cell_area[1]/survey$setdet$tow_area[1]
+  return(grid_dat)
+}
+
+sdm_prediction_IID_fn <- function(x, y){
+
+  pred_IID <- predict(x,
+                      newdata = y,
+                      return_tmb_object = TRUE,
+                      area = y$area)
+}
+
+sdm_prediction_AR1_fn <- function(x, y){
+  pred_AR1 <- predict(x,
+                      newdata = y,
+                      return_tmb_object = TRUE,
+                      area = y$area)
+}
+
+sdm_index_IID_fn <- function(x){
+  index_IID <- get_index(x, bias_correct = TRUE) %>%
+    mutate(type = "IID", N = est)
+}
+
+sdm_index_AR1_fn <- function(x){
+  index_AR1 <- get_index(x, bias_correct = TRUE) %>%
+    mutate(type = "AR1", N = est)
+}
+
+
 #### 20 %
 survey_sc2_20 <- survey
 for( i in seq_along(survey_sc2_20)){
@@ -360,7 +435,7 @@ result_scenario2 <- bind_rows(design_index_sc2_20_b, design_index_sc2_50_b, boot
 
 ### Medium intensity
 
-result_scenario2 %>%
+results_scenario2 %>%
   filter(scenario == "2M")%>%
   ggplot(aes(year, N, group = type)) +
   geom_line(aes(colour = type), size=1) +
@@ -373,9 +448,9 @@ result_scenario2 %>%
   theme(legend.position = "none")
 
 
- ### Medium intensity
+ ### High intensity
 
-result_scenario2 %>%
+results_scenario2 %>%
   filter(scenario == "2H")%>%
   ggplot(aes(year, N, group = type)) +
   geom_line(aes(colour = type), size=1) +
