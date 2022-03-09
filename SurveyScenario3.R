@@ -100,18 +100,92 @@ toc()
 library(sp)
 library(sf)
 library(data.table)
+library(raster)
 
-# Plucking samples
+
+# Making a grid with SimSurvey
+grid <- make_grid(x_range = c(-150, 150),
+                  y_range = c(-150, 150),
+                  res = c(10, 10),
+                  shelf_depth = 200,
+                  shelf_width = 100,
+                  depth_range = c(0, 1000),
+                  n_div = 1,
+                  strat_breaks = seq(0, 1000, by = 40),
+                  strat_splits = 2,
+                  method = "spline")
+
+# Converting from RasterBrick to SpatialPolygonsDataFrame
+polylist_grid <- lapply(as.list(grid), rasterToPolygons)
+
+# Combining all attributes to a single SpatialPolygonsDataFrame and convert it to sf
+grid_sf <- list(polylist_grid, makeUniqueIDs = T) %>%
+  flatten() %>%
+  do.call(cbind, .) %>%
+  st_as_sf() %>%
+  mutate(terrain = case_when(
+    depth < 200 ~ "shallow",
+    depth == 200 ~ "shelf",
+    depth > 200 ~ "slope"))
+
+# Creating a buffer area
+
+grid_sf_buffered <- function(x, fraction) {
+  width_half <- sqrt(st_area(st_union(x)) * fraction)/2
+  buffer <- st_buffer(st_geometry(st_union(x)), -width_half)
+  st_geometry(x)[!st_is_empty(buffer)] = buffer[!st_is_empty(buffer)]
+  return(st_union(x))
+}
+grid_sf_buffered_perc10 <- grid_sf_buffered(grid_sf, 0.1)
+grid_sf_buffered_perc20 <- grid_sf_buffered(grid_sf, 0.2)
+
+
+### selecting a random point and creating the blocked area
+
+set.seed(30)
+
+block_poly_sf_fn <- function(x, fraction, buffer) {
+  grid_centroid <- st_centroid(x)
+  pointpool <- st_intersection(grid_centroid, buffer)
+
+  selected <-  pointpool %>%
+    #group_by()%>%
+    slice_sample(n = 1) %>%
+    st_coordinates(selected)%>%
+    data.table()
+
+  width_half <- sqrt(as.numeric(st_area(st_union(x))) * fraction)/2
+
+  yplus <- selected$Y + width_half
+  xplus <- selected$X + width_half
+  yminus <- selected$Y - width_half
+  xminus <- selected$X - width_half
+
+  x1 <- c(xminus,xplus,xplus,xminus,xminus) # a(SW), b(SE), c(NE), d(NW), a(SW) - closing the vertices
+  y1 <- c(yplus,yplus,yminus,yminus,yplus)
+
+  block <- sp::Polygon(cbind(x1,y1))
+  block <- sp::Polygons(list(block), ID = "1")
+  block_poly <- sp::SpatialPolygons(list(block))
+  block_poly_sf <- st_as_sf(block_poly)
+
+  return(block_poly_sf)
+}
+
+block_poly_sf <- block_poly_sf_fn(grid_sf, 0.1, grid_sf_buffered_perc10) ### block area is 10 % of the survey area
+
+block_poly_sf2 <- block_poly_sf_fn(grid_sf, 0.2, grid_sf_buffered_perc20) ### block area is 20 % of the survey area
+
+
+################# Blocking the setdets
 
 setdet <- map(survey, function(x) {pluck(x, 'setdet')})
 
-# classifying the terrain group
-
 setdet <- map(setdet, function(x) {x %>%
-      mutate(terrain = case_when(
-      depth < 200 ~ "Shallow",
-      depth ==200 ~ "Shelf",
-      depth > 200 ~ "Slope"
+    mutate(terrain = case_when(
+      depth < 200 ~ "shallow",
+      depth ==200 ~ "shelf",
+      depth > 200 ~ "slope"
     ))})
 
 # Converting the setdet to a SpatialPointsDataFrame and then to an sf object
@@ -121,84 +195,146 @@ for (i in 1:length(setdet)){
 
 setdet_sf <- map(setdet, function(x) {st_as_sf(x)})
 
-# Selecting a random point withing a terrain class
-
-set.seed(5)
-point_shelf <- spsample(setdet[[1]][which("terrain"=="Shelf")],n=1,"random")
-point_shelf@coords
-
-# Defining the width of the polygon
-
-get_width <- function(total_area, fraction) {sqrt(total_area * fraction)}
-
-width <- get_width(300*300, 0.1)
-width20 <- get_width(300*300, 0.2)
-
-# Define the edges
-
-yplus <- point_shelf$coords.x1+width/2
-xplus <- point_shelf$coords.x2+width/2
-yminus <- point_shelf$coords.x1-width/2
-xminus <- point_shelf$coords.x2-width/2
-
-# Define the vertices
-
-x1 <- c(xminus,xplus,xplus,xminus,xminus) # a(SW), b(SE), c(NE), d(NW), a(SW) - closing the vertices
-y1 <- c(yplus,yplus,yminus,yminus,yplus)
-
-# Assign the vertices to a polygon and then creating SpatialPolygons and an sf object
-
-block_shelf <- sp::Polygon(cbind(x1,y1))
-block_shelf <- sp::Polygons(list(block_shelf), ID = "shelf")
-str(block_shelf,1)
-
-block_shelfpoly <- sp::SpatialPolygons(list(block_shelf))
-block_shelfpoly
-
-block_shelfpoly_sf <- st_as_sf(block_shelfpoly)
-block_shelfpoly_sf
-
-# Plotting the block on the survey area
-
-plot(setdet[[1]])
-plot(block_shelfpoly_sf, add=TRUE, col = "red")
-
-# Removing the area from setdet, year = 10
-
-blocked_samples10 <- map (setdet_sf, function(x) {subset(x, year >= 10)})
-
-blocked_samples <- map(seq_along(blocked_samples10), function(i) {
-                  blocked_samples <-st_difference(blocked_samples10[[i]], block_shelfpoly_sf) %>%
-                    st_drop_geometry() %>%
-                    data.table()
-                  })
-
 # Getting all samples before year 10
-samples10 <- map (setdet_sf, function(x) {subset(x, year < 10) %>% st_drop_geometry() %>% data.table()})
 
-# combining all samples
+samples10 <- map (setdet_sf, function(x) {subset(x, year < 10) %>% st_drop_geometry() %>% data.table()}) ### same for any perc
+
+# Removing the area from setdet, year >= 10
+
+sample_a_y10 <- map (setdet_sf, function(x) {subset(x, year >= 10)})
+
+### 10 percent setdet
+
+blocked_samples <- map(seq_along(sample_a_y10), function(i) {
+  blocked_samples <- st_difference(sample_a_y10[[i]], block_poly_sf) %>%
+    st_drop_geometry() %>%
+    data.table()
+})
+
 combined_samples_10 <- map(seq_along(blocked_samples),function(i) {rbind(blocked_samples[[i]], samples10[[i]])})
 
-# calculating index
-block_10_index <- map(seq_along(survey), function(i){
+
+### 20 percent setdet
+
+blocked_samples2 <- map(seq_along(sample_a_y10), function(i) {
+  blocked_samples <- st_difference(sample_a_y10[[i]], block_poly_sf2) %>%
+    st_drop_geometry() %>%
+    data.table()
+})
+
+combined_samples_20 <- map(seq_along(blocked_samples),function(i) {rbind(blocked_samples2[[i]], samples10[[i]])})
+
+
+# plot(st_union(grid_sf), graticule = TRUE, axes = TRUE)
+# plot(grid_sf_buffered_perc10, add=TRUE, col="yellow")
+# plot(block_poly_sf, add= TRUE, col="green")
+#
+# plot(st_union(grid_sf), axes = TRUE)
+# plot(grid_sf_buffered_perc20, add=TRUE, col="yellow")
+# plot(block_poly_sf2, add= TRUE, col="green")
+
+
+################# Design-based index
+
+design_index_sc3_10  <- map(seq_along(survey), function(i){
   survey[[i]]$setdet <- combined_samples_10[[i]]
   survey_index <- survey[[i]] %>% run_strat()})
 
+for( i in seq_along(design_index_sc3_10)){
+  design_index_sc3_10[[i]]$iter <- as.numeric(i)
+}
+
+design_index_sc3_10_b <- as.data.frame(do.call(rbind, design_index_sc3_10))
+design_index_sc3_10_b$scenario <- "3L"
+
+
+design_index_sc3_20  <- map(seq_along(survey), function(i){
+  survey[[i]]$setdet <- combined_samples_20[[i]]
+  survey_index <- survey[[i]] %>% run_strat()})
+
+for( i in seq_along(design_index_sc3_20)){
+  design_index_sc3_20[[i]]$iter <- as.numeric(i)
+}
+
+design_index_sc3_20_b <- as.data.frame(do.call(rbind, design_index_sc3_20))
+design_index_sc3_20_b$scenario <- "3H"
+
+
+################# Bootstrapped
+
+tic()
+boot_index_sc3_10 <- furrr::future_map(combined_samples_10, boot_wrapper, reps=2000, .options = furrr::furrr_options(seed = TRUE))
+toc()
+
+for( i in seq_along(boot_index_sc3_10 )){
+  boot_index_sc3_10 [[i]]$iter <- as.numeric(i)
+}
+
+boot_index_sc3_10_b <- as.data.frame(do.call(rbind, boot_index_sc3_10 ))
+boot_index_sc3_10_b$scebario <- "3L"
 
 
 
+tic()
+boot_index_sc3_20 <- furrr::future_map(combined_samples_20, boot_wrapper, reps=2000, .options = furrr::furrr_options(seed = TRUE))
+toc()
+
+for( i in seq_along(boot_index_sc3_20 )){
+  boot_index_sc3_20 [[i]]$iter <- as.numeric(i)
+}
+
+boot_index_sc3_20_b <- as.data.frame(do.call(rbind, boot_index_sc3_20 ))
+boot_index_sc3_20_b$scebario <- "3H"
+
+################### Updating survey lists
+
+survey_sc3_10 <- survey
+for( i in seq_along(survey_sc3_10)){
+  survey_sc3_10[[i]]$setdet <- combined_samples_10[[i]]}
+
+survey_sc3_20 <- survey
+for( i in seq_along(survey_sc3_20)){
+  survey_sc3_20[[i]]$setdet <- combined_samples_20[[i]]}
 
 
+################# Model
+library(data.table)
+
+tic()
+model_index_sc3_10 <- furrr::future_map(survey_sc3_10, sdm, .options = furrr::furrr_options(seed = TRUE))
+toc()
+
+for( i in seq_along(model_index_sc3_10)){
+  model_index_sc3_10[[i]]$iter <- as.numeric(i)
+}
+model_index_sc3_10_b <- as.data.frame(do.call(rbind, model_index_sc3_10))
+model_index_sc3_10_b$scenario <- "3L"
+
+tic()
+model_index_sc3_20 <- furrr::future_map(survey_sc3_20, sdm, .options = furrr::furrr_options(seed = TRUE))
+toc()
+
+for( i in seq_along(model_index_sc3_20)){
+  model_index_sc3_20[[i]]$iter <- as.numeric(i)
+}
+model_index_sc3_20_b <- as.data.frame(do.call(rbind, model_index_sc3_20))
+model_index_sc3_20_b$scenario <- "3H"
 
 
+################# Ensamble
 
+str(true_index2)
+str(design_index_sc3_10_b)
+str(design_index_sc3_20_b)
+str(boot_index_sc3_10_b)
+str(boot_index_sc3_20_b)
+str(model_index_sc3_10_b)
+str(model_index_sc3_20_b)
 
-
-
-
-
-
-
-
-
-
+ensamb_sc3 <- bind_rows(true_index2,
+                        design_index_sc3_10_b,
+                        design_index_sc3_20_b,
+                        boot_index_sc3_10_b,
+                        boot_index_sc3_20_b,
+                        model_index_sc3_10_b,
+                        model_index_sc3_20_b)
