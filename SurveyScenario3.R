@@ -249,8 +249,7 @@ for( i in seq_along(survey_sc3_20)){
 true_index <- map(seq_along(survey), function(i){
   survey[[i]]$setdet %>%
     group_by(year) %>%
-    summarise(N = sum(N)) %>%
-    mutate(type= "true")})
+    summarise(N = sum(N))})
 
 for( i in seq_along(true_index)){
   true_index[[i]]$iter <- as.numeric(i)
@@ -258,7 +257,6 @@ for( i in seq_along(true_index)){
 
 true_index2 <- as.data.frame(do.call(rbind, true_index))
 
-true_index2$type <- NULL
 
 ################# Design-based index
 
@@ -355,7 +353,7 @@ for( i in seq_along(boot_index_sc3_10 )){
 }
 
 boot_index_sc3_10_b <- as.data.frame(do.call(rbind, boot_index_sc3_10 ))
-boot_index_sc3_10_b$scebario <- "3M"
+boot_index_sc3_10_b$scenario <- "3M"
 
 ### 20 %
 
@@ -369,7 +367,7 @@ for( i in seq_along(boot_index_sc3_20 )){
 }
 
 boot_index_sc3_20_b <- as.data.frame(do.call(rbind, boot_index_sc3_20 ))
-boot_index_sc3_20_b$scebario <- "3H"
+boot_index_sc3_20_b$scenario <- "3H"
 
 
 ################# sdmTMB
@@ -552,7 +550,7 @@ for( i in seq_along(sdm_index_AR1_sc3_20)){
 sdm_index_AR1_2_sc3_20 <- as.data.frame(do.call(rbind, sdm_index_AR1_sc3_20))
 sdm_index_AR1_2_sc3_20$scenario <- "3H"
 
-################# Ensamble
+################# Combining results
 
 str(true_index2)
 
@@ -565,8 +563,7 @@ str(sdm_index_IID_2_sc3_20)
 str(sdm_index_AR1_2_sc3_10)
 str(sdm_index_AR1_2_sc3_20)
 
-results_scenario3 <- bind_rows(true_index2,
-                        design_index_sc3_10_b,
+results_scenario3 <- bind_rows(design_index_sc3_10_b,
                         design_index_sc3_20_b,
                         boot_index_sc3_10_b,
                         boot_index_sc3_20_b,

@@ -104,16 +104,13 @@ toc()
 true_index <- map(seq_along(survey), function(i){
   survey[[i]]$setdet %>%
     group_by(year) %>%
-    summarise(N = sum(N)) %>%
-    mutate(type= "true")})
+    summarise(N = sum(N))})
 
 for( i in seq_along(true_index)){
   true_index[[i]]$iter <- as.numeric(i)
 }
 
 true_index2 <- as.data.frame(do.call(rbind, true_index))
-
-true_index2$type <- NULL
 
 ############# Design-based index
 
