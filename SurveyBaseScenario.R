@@ -1,6 +1,5 @@
 #############  Packages
 
-library(dplyr)
 library(SimSurvey)
 library(sdmTMB)
 library(tidyr)
@@ -9,6 +8,8 @@ library(purrr)
 library(tictoc)
 library(ggplot2)
 library(data.table)
+library(dplyr)
+
 
 plan(multisession, workers = floor(availableCores()/2))
 
@@ -128,7 +129,7 @@ toc()
 design_index <- map(seq_along(design), function(i){
   design[[i]]$total_strat %>%
     mutate(N = total, upr =total_ucl, lwr = total_lcl, type = "Design-based") %>%
-    select(year, N, type, lwr, upr)})
+    dplyr:: select(year, N, type, lwr, upr)})
 
 for( i in seq_along(design_index)){
   design_index[[i]]$iter <- as.numeric(i)
@@ -194,7 +195,7 @@ for( i in seq_along(boot_index)){
 boot_index2 <- as.data.frame(do.call(rbind, boot_index))
 boot_index2$scenario <- "base"
 
-boot_index2 <- boot_index2 %>% select(year, mean_boot, lwr, upr, type, iter, scenario) %>%
+boot_index2 <- boot_index2 %>% dplyr::select(year, mean_boot, lwr, upr, type, iter, scenario) %>%
   rename(N  = mean_boot)
 
 
@@ -336,9 +337,8 @@ str(sdm_index_AR1_2)
 
 results_base <- bind_rows(design_index2, boot_index2, sdm_index_IID_2, sdm_index_AR1_2)
 
-results_base %>%
-  filter(type!="true")%>%
-ggplot(aes(year, N, group = type)) +
+
+ggplot(results_base, aes(year, N, group = type)) +
   geom_line(aes(colour = type), size=1) +
   facet_grid(iter~factor(type, levels=c('Design-based','Bootstrapped','IID','AR1')),  scales = "free_y")+
   geom_line(aes(year, N), size=1, data= true_index2, inherit.aes = FALSE) +

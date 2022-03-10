@@ -1,4 +1,5 @@
-library(dplyr)
+#############  Packages
+
 library(SimSurvey)
 library(sdmTMB)
 library(tidyr)
@@ -6,6 +7,7 @@ library(future)
 library(purrr)
 library(tictoc)
 library(ggplot2)
+library(dplyr)
 
 plan(multisession, workers = floor(availableCores()/2))
 
@@ -166,6 +168,7 @@ design_index_sc2_20 <- map(seq_along(design_index_sc2_20), function(i){
 
 for( i in seq_along(design_index_sc2_20)){
   design_index_sc2_20[[i]]$iter <- as.numeric(i)
+  design_index_sc2_20[[i]]$true <- true_index[[i]]$N
 }
 
 design_index_sc2_20_b <- as.data.frame(do.call(rbind, design_index_sc2_20))
@@ -432,7 +435,7 @@ result_scenario2 <- bind_rows(design_index_sc2_20_b, design_index_sc2_50_b, boot
 
 ### Medium intensity
 
-results_scenario2 %>%
+result_scenario2 %>%
   filter(scenario == "2M")%>%
   ggplot(aes(year, N, group = type)) +
   geom_line(aes(colour = type), size=1) +
@@ -447,7 +450,7 @@ results_scenario2 %>%
 
  ### High intensity
 
-results_scenario2 %>%
+result_scenario2 %>%
   filter(scenario == "2H")%>%
   ggplot(aes(year, N, group = type)) +
   geom_line(aes(colour = type), size=1) +

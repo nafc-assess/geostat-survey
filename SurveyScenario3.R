@@ -1,4 +1,5 @@
-library(dplyr)
+#############  Packages
+
 library(SimSurvey)
 library(sdmTMB)
 library(tidyr)
@@ -6,6 +7,8 @@ library(future)
 library(purrr)
 library(tictoc)
 library(data.table)
+library(ggplot2)
+library(dplyr)
 
 plan(multisession, workers = floor(availableCores()/2))
 
@@ -425,14 +428,16 @@ sdm_prediction_IID_fn <- function(x, y){
   pred_IID <- predict(x,
                       newdata = y,
                       return_tmb_object = TRUE,
-                      area = y$area)
+                      area = y$area,
+                      se_fit = TRUE)
 }
 
 sdm_prediction_AR1_fn <- function(x, y){
   pred_AR1 <- predict(x,
                       newdata = y,
                       return_tmb_object = TRUE,
-                      area = y$area)
+                      area = y$area,
+                      se_fit = TRUE)
 }
 
 sdm_index_IID_fn <- function(x){
