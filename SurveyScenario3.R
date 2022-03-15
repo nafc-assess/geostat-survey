@@ -1,105 +1,85 @@
 #############  Packages
 
-library(SimSurvey)
-library(sdmTMB)
-library(tidyr)
-library(future)
-library(purrr)
-library(tictoc)
-library(data.table)
-library(ggplot2)
-library(dplyr)
-
-plan(multisession, workers = floor(availableCores()/2))
-
-# Population
-set.seed(1)
-
-population <- function(iter) {
-  set.seed(iter * 10)
-  pop <- sim_abundance(ages = 1:20,
-                       years = 1:20,
-                       Z = sim_Z(log_mean = log(0.63),
-                                 log_sd = 0.3,
-                                 phi_age = 0.9,
-                                 phi_year = 0.5,
-                                 plot = FALSE),
-                       R = sim_R(log_mean = log(75e+06),
-                                 log_sd = 0.5,
-                                 random_walk = TRUE,
-                                 plot = FALSE),
-                       N0 = sim_N0(N0 = "exp",
-                                   plot = FALSE),
-                       growth = sim_vonB(Linf = 120,
-                                         L0 = 5,
-                                         K = 0.11,
-                                         log_sd = 0.15,
-                                         plot = FALSE,
-                                         length_group = 3))
-}
-
+# library(SimSurvey)
+# library(sdmTMB)
+# library(tidyr)
+# library(future)
+# library(purrr)
+# library(tictoc)
+# library(data.table)
+# library(ggplot2)
+# library(dplyr)
+#
+# plan(multisession, workers = floor(availableCores()/2))
+#
+# # Population
+# set.seed(1)
+#
+# population <- function(iter) {
+#   set.seed(iter * 10)
+#   pop <- sim_abundance(ages = 1:20,
+#                        years = 1:20,
+#                        Z = sim_Z(log_mean = log(0.63),
+#                                  log_sd = 0.3,
+#                                  phi_age = 0.9,
+#                                  phi_year = 0.5,
+#                                  plot = FALSE),
+#                        R = sim_R(log_mean = log(75e+06),
+#                                  log_sd = 0.5,
+#                                  random_walk = TRUE,
+#                                  plot = FALSE),
+#                        N0 = sim_N0(N0 = "exp",
+#                                    plot = FALSE),
+#                        growth = sim_vonB(Linf = 120,
+#                                          L0 = 5,
+#                                          K = 0.11,
+#                                          log_sd = 0.15,
+#                                          plot = FALSE,
+#                                          length_group = 3))
+# }
+#
+# # tic()
+# # purrr::map(seq_len(6), population)
+# # toc()
+#
 # tic()
-# purrr::map(seq_len(6), population)
+# pop <- furrr::future_map(seq_len(6), population, .options = furrr::furrr_options(seed = TRUE, packages = "SimSurvey"))
+# toc()
+#
+# # Population distribution
+#
+# distribution <- function(x) {
+#   sim_distribution(x,
+#                    grid = make_grid(x_range = c(-150, 150),
+#                                     y_range = c(-150, 150),
+#                                     res = c(10, 10),
+#                                     shelf_depth = 200,
+#                                     shelf_width = 100,
+#                                     depth_range = c(0, 1000),
+#                                     n_div = 1,
+#                                     strat_breaks = seq(0, 1000, by = 40),
+#                                     strat_splits = 2,
+#                                     method = "spline"),
+#                    ays_covar = sim_ays_covar(sd = 2.5,
+#                                              range = 200,
+#                                              phi_age = 0.5,
+#                                              phi_year = 0.9,
+#                                              group_ages = 12:20),
+#                    depth_par = sim_parabola(mu = log(80),
+#                                             sigma = 0.25, plot=FALSE, log_space = TRUE))
+# }
+#
+# #a <- distribution(pop[[1]])
+#
+# # tic()
+# # purrr::map(pop, distribution)
+# # toc()
+#
+# tic()
+# sim <- furrr::future_map(pop, distribution, .options = furrr::furrr_options(seed = TRUE, packages = "SimSurvey"))
 # toc()
 
-tic()
-pop <- furrr::future_map(seq_len(6), population, .options = furrr::furrr_options(seed = TRUE, packages = "SimSurvey"))
-toc()
-
-# Population distribution
-
-distribution <- function(x) {
-  sim_distribution(x,
-                   grid = make_grid(x_range = c(-150, 150),
-                                    y_range = c(-150, 150),
-                                    res = c(10, 10),
-                                    shelf_depth = 200,
-                                    shelf_width = 100,
-                                    depth_range = c(0, 1000),
-                                    n_div = 1,
-                                    strat_breaks = seq(0, 1000, by = 40),
-                                    strat_splits = 2,
-                                    method = "spline"),
-                   ays_covar = sim_ays_covar(sd = 2.5,
-                                             range = 200,
-                                             phi_age = 0.5,
-                                             phi_year = 0.9,
-                                             group_ages = 12:20),
-                   depth_par = sim_parabola(mu = log(80),
-                                            sigma = 0.25, plot=FALSE, log_space = TRUE))
-}
-
-#a <- distribution(pop[[1]])
-
-# tic()
-# purrr::map(pop, distribution)
-# toc()
-
-tic()
-sim <- furrr::future_map(pop, distribution, .options = furrr::furrr_options(seed = TRUE, packages = "SimSurvey"))
-toc()
-
-
-# Survey
-
-survey <-  function(x) {
-  sim_survey(x,
-             n_sims = 1,
-             q = sim_logistic(k = 2, x0 = 3, plot = FALSE),
-             trawl_dim = c(1.5, 0.02),
-             resample_cells = FALSE,
-             binom_error = TRUE,
-             min_sets = 2,
-             set_den = 2/1000)
-}
-
-# tic()
-# purrr::map(sim, survey)
-# toc()
-
-tic()
-survey <- furrr::future_map(sim, survey, .options = furrr::furrr_options(seed = TRUE, packages = "SimSurvey"))
-toc()
+# Survey scenarios
 
 library(sp)
 library(sf)
@@ -121,6 +101,8 @@ grid <- make_grid(x_range = c(-150, 150),
 
 # Converting from RasterBrick to SpatialPolygonsDataFrame
 polylist_grid <- lapply(as.list(grid), rasterToPolygons)
+
+poly_cell <- lapply(as.list(grid$cell), rasterToPolygons)
 
 # Combining all attributes to a single SpatialPolygonsDataFrame and convert it to sf
 grid_sf <- list(polylist_grid, makeUniqueIDs = T) %>%
@@ -180,85 +162,81 @@ block_poly_sf_10 <- block_poly_sf_fn(grid_sf, 0.1, grid_sf_buffered_perc10) ### 
 
 block_poly_sf_20 <- block_poly_sf_fn(grid_sf, 0.2, grid_sf_buffered_perc20) ### block area is 20 % of the survey area
 
+# 10 %
 
-################# Blocking the setdets
+st_crs(grid_sf) = st_crs(block_poly_sf_10)
 
-setdet <- map(survey, function(x) {pluck(x, 'setdet')})
-
-setdet <- map(setdet, function(x) {x %>%
-    mutate(terrain = case_when(
-      depth < 200 ~ "shallow",
-      depth ==200 ~ "shelf",
-      depth > 200 ~ "slope"
-    ))})
-
-# Converting the setdet to a SpatialPointsDataFrame and then to an sf object
-
-for (i in 1:length(setdet)){
-  coordinates(setdet[[i]]) = cbind(setdet[[i]]$x, setdet[[i]]$y)}
-
-setdet_sf <- map(setdet, function(x) {st_as_sf(x)})
-
-# Getting all samples before year 10
-
-samples10 <- map (setdet_sf, function(x) {subset(x, year < 10) %>% st_drop_geometry() %>% data.table()}) ### same for any perc
-
-# Removing the area from setdet, year >= 10
-
-sample_a_y10 <- map (setdet_sf, function(x) {subset(x, year >= 10)})
-
-### 10 percent setdet
-
-blocked_samples <- map(seq_along(sample_a_y10), function(i) {
-  blocked_samples <- st_difference(sample_a_y10[[i]], block_poly_sf_10) %>%
-    st_drop_geometry() %>%
-    data.table()
-})
-
-combined_samples_10 <- map(seq_along(blocked_samples),function(i) {rbind(blocked_samples[[i]], samples10[[i]])})
+drop_cells_sc3_10 <-st_intersection(grid_sf, block_poly_sf_10) %>%
+  dplyr::select(cell)%>%
+  st_drop_geometry() %>%
+  data.table()
 
 
-### 20 percent setdet
+set_rule_sc3_10_fn <- function(x) {
 
-blocked_samples2 <- map(seq_along(sample_a_y10), function(i) {
-  blocked_samples <- st_difference(sample_a_y10[[i]], block_poly_sf_20) %>%
-    st_drop_geometry() %>%
-    data.table()
-})
+  standard_sets <- sim_sets(x, year < 10,  min_sets = 2, set_den = 2 / 1000)
 
-combined_samples_20 <- map(seq_along(blocked_samples),function(i) {rbind(blocked_samples2[[i]], samples10[[i]])})
+  reduced_sets <- sim_sets(x, year >= 10 & !cell %in% drop_cells_sc3_10$cell,  min_sets = 2, set_den = 2/1000)
 
+  sets <- rbind(standard_sets, reduced_sets)
 
-# plot(st_union(grid_sf), graticule = TRUE, axes = TRUE)
-# plot(grid_sf_buffered_perc10, add=TRUE, col="yellow")
-# plot(block_poly_sf, add= TRUE, col="green")
-#
-# plot(st_union(grid_sf), axes = TRUE)
-# plot(grid_sf_buffered_perc20, add=TRUE, col="yellow")
-# plot(block_poly_sf2, add= TRUE, col="green")
+  sets$set <- seq(nrow(sets)) # Important - make sure set has a unique ID.
 
-################### Updating survey lists
-
-survey_sc3_10 <- survey
-for( i in seq_along(survey_sc3_10)){
-  survey_sc3_10[[i]]$setdet <- combined_samples_10[[i]]}
-
-survey_sc3_20 <- survey
-for( i in seq_along(survey_sc3_20)){
-  survey_sc3_20[[i]]$setdet <- combined_samples_20[[i]]}
-
-############# True abundance
-
-true_index <- map(seq_along(survey), function(i){
-  survey[[i]]$setdet %>%
-    group_by(year) %>%
-    summarise(N = sum(N))})
-
-for( i in seq_along(true_index)){
-  true_index[[i]]$iter <- as.numeric(i)
+  return(sets)
 }
 
-true_index2 <- as.data.frame(do.call(rbind, true_index))
+set_rule_sc3_10 <- furrr::future_map(sim, set_rule_sc3_10_fn, .options = furrr::furrr_options(seed = TRUE, packages = "SimSurvey"))
+
+
+survey_fn <- function(x, y) {survey <- SimSurvey::sim_survey(sim = x, custom_sets = y)}
+
+
+survey_3M <- furrr::future_map2(sim, set_rule_sc3_10, survey_fn, .options = furrr::furrr_options(seed = TRUE))
+
+
+## 20 %
+
+st_crs(grid_sf) = st_crs(block_poly_sf_20)
+
+drop_cells_sc3_20 <-st_intersection(grid_sf, block_poly_sf_20) %>%
+  dplyr::select(cell)%>%
+  st_drop_geometry() %>%
+  data.table()
+
+
+set_rule_sc3_20_fn <- function(x) {
+
+  standard_sets <- sim_sets(x, year < 10,  min_sets = 2, set_den = 2 / 1000)
+
+  reduced_sets <- sim_sets(x, year >= 10 & !cell %in% drop_cells_sc3_20$cell,  min_sets = 2, set_den = 2/1000)
+
+  sets <- rbind(standard_sets, reduced_sets)
+
+  sets$set <- seq(nrow(sets)) # Important - make sure set has a unique ID.
+
+  return(sets)
+}
+
+set_rule_sc3_20 <- furrr::future_map(sim, set_rule_sc3_20_fn, .options = furrr::furrr_options(seed = TRUE, packages = "SimSurvey"))
+
+
+survey_fn <- function(x, y) {survey <- SimSurvey::sim_survey(sim = x, custom_sets = y)}
+
+
+survey_3H <- furrr::future_map2(sim, set_rule_sc3_20, survey_fn, .options = furrr::furrr_options(seed = TRUE))
+
+
+############# True abundance for graphs
+
+true_index_3M <- map(seq_along(survey_3M),function(i){
+  tibble(year = unique(survey_3M[[i]]$sp_N$year), N = as.numeric(colSums(survey_3M[[i]]$I)))
+})
+
+for( i in seq_along(true_index_3M)){
+  true_index_3M[[i]]$iter <- as.numeric(i)
+}
+
+true_index_3M_df <- as.data.frame(do.call(rbind, true_index_3M))
 
 
 ################# Design-based index
@@ -269,7 +247,7 @@ design <- function(x) {
 ### 10 %
 
 tic()
-design_sc3_10 <- furrr::future_map(survey_sc3_10, design)
+design_sc3_10 <- furrr::future_map(survey_3M, design)
 toc()
 
 design_index_sc3_10 <- map(seq_along(design_sc3_10), function(i){
@@ -277,9 +255,19 @@ design_index_sc3_10 <- map(seq_along(design_sc3_10), function(i){
     mutate(N = total, upr =total_ucl, lwr = total_lcl, type = "Design-based") %>%
     dplyr:: select(year, N, type, lwr, upr)})
 
+true_index_3M <- map(seq_along(survey_3M),function(i){
+  tibble(year = unique(survey_3M[[i]]$sp_N$year), N = as.numeric(colSums(survey_3M[[i]]$I)))
+})
+
+
+for( i in seq_along(true_index_3M)){
+  true_index_3M[[i]]$iter <- as.numeric(i)
+  true_index_3M[[i]]$type <- "true"
+}
+
 for( i in seq_along(design_index_sc3_10)){
   design_index_sc3_10[[i]]$iter <- as.numeric(i)
-  design_index_sc3_10[[i]]$true <- true_index[[i]]$N
+  design_index_sc3_10[[i]]$true <- true_index_3M[[i]]$N
 }
 
 design_index_sc3_10_b <- as.data.frame(do.call(rbind, design_index_sc3_10))
@@ -288,7 +276,7 @@ design_index_sc3_10_b$scenario <- "3M"
 ### 20 %
 
 tic()
-design_sc3_20 <- furrr::future_map(survey_sc3_20, design)
+design_sc3_20 <- furrr::future_map(survey_3H, design)
 toc()
 
 
@@ -297,10 +285,19 @@ design_index_sc3_20 <- map(seq_along(design_sc3_20), function(i){
     mutate(N = total, upr =total_ucl, lwr = total_lcl, type = "Design-based") %>%
     dplyr:: select(year, N, type, lwr, upr)})
 
+true_index_3H <- map(seq_along(survey_3H),function(i){
+  tibble(year = unique(survey_3H[[i]]$sp_N$year), N = as.numeric(colSums(survey_3H[[i]]$I)))
+})
+
+for( i in seq_along(true_index_3H)){
+  true_index_3H[[i]]$iter <- as.numeric(i)
+  true_index_3H[[i]]$type <- "true"
+}
+
 
 for( i in seq_along(design_index_sc3_20)){
   design_index_sc3_20[[i]]$iter <- as.numeric(i)
-  design_index_sc3_20[[i]]$true <- true_index[[i]]$N
+  design_index_sc3_20[[i]]$true <- true_index_3H[[i]]$N
 }
 
 design_index_sc3_20_b <- as.data.frame(do.call(rbind, design_index_sc3_20))
@@ -346,32 +343,43 @@ boot_wrapper <- function(dat, reps) {
 
 ### 10 %
 
+setdet_3M <- map(survey_3M, function(x) {pluck(x, 'setdet')})
+
 tic()
-boot_index_sc3_10 <- furrr::future_map(combined_samples_10, boot_wrapper, reps=2000, .options = furrr::furrr_options(seed = TRUE))
+boot_index_sc3_10 <- furrr::future_map(setdet_3M, boot_wrapper, reps=1000, .options = furrr::furrr_options(seed = TRUE))
 toc()
 
 for( i in seq_along(boot_index_sc3_10 )){
   boot_index_sc3_10 [[i]]$iter <- as.numeric(i)
-  boot_index_sc3_10[[i]]$true <- true_index[[i]]$N
+  boot_index_sc3_10[[i]]$true <- true_index_3M[[i]]$N
 }
 
 boot_index_sc3_10_b <- as.data.frame(do.call(rbind, boot_index_sc3_10 ))
 boot_index_sc3_10_b$scenario <- "3M"
 
+boot_index_sc3_10_b <- boot_index_sc3_10_b %>%
+  dplyr:: select(year, mean_boot, lwr, upr, type, iter, scenario, true) %>%
+  rename(N=mean_boot)
+
 ### 20 %
 
+setdet_3H <- map(survey_3H, function(x) {pluck(x, 'setdet')})
+
 tic()
-boot_index_sc3_20 <- furrr::future_map(combined_samples_20, boot_wrapper, reps=2000, .options = furrr::furrr_options(seed = TRUE))
+boot_index_sc3_20 <- furrr::future_map(setdet_3H, boot_wrapper, reps=1000, .options = furrr::furrr_options(seed = TRUE))
 toc()
 
 for( i in seq_along(boot_index_sc3_20 )){
   boot_index_sc3_20 [[i]]$iter <- as.numeric(i)
-  boot_index_sc3_20[[i]]$true <- true_index[[i]]$N
+  boot_index_sc3_20[[i]]$true <- true_index_3H[[i]]$N
 }
 
 boot_index_sc3_20_b <- as.data.frame(do.call(rbind, boot_index_sc3_20 ))
 boot_index_sc3_20_b$scenario <- "3H"
 
+boot_index_sc3_20_b <- boot_index_sc3_20_b %>%
+  dplyr:: select(year, mean_boot, lwr, upr, type, iter, scenario, true) %>%
+  rename(N=mean_boot)
 
 ################# sdmTMB
 
@@ -428,25 +436,23 @@ sdm_prediction_IID_fn <- function(x, y){
   pred_IID <- predict(x,
                       newdata = y,
                       return_tmb_object = TRUE,
-                      area = y$area,
-                      se_fit = TRUE)
+                      area = y$area)
 }
 
 sdm_prediction_AR1_fn <- function(x, y){
   pred_AR1 <- predict(x,
                       newdata = y,
                       return_tmb_object = TRUE,
-                      area = y$area,
-                      se_fit = TRUE)
+                      area = y$area)
 }
 
 sdm_index_IID_fn <- function(x){
-  index_IID <- get_index(x, bias_correct = TRUE) %>%
+  index_IID <- get_index(x) %>%
     mutate(type = "IID", N = est)
 }
 
 sdm_index_AR1_fn <- function(x){
-  index_AR1 <- get_index(x, bias_correct = TRUE) %>%
+  index_AR1 <- get_index(x) %>%
     mutate(type = "AR1", N = est)
 }
 
@@ -454,7 +460,7 @@ sdm_index_AR1_fn <- function(x){
 ### 10 %
 
 tic()
-sdm_data_sc3_10 <- furrr::future_map(survey_sc3_10, sdm_data_fn, .options = furrr::furrr_options(seed = TRUE))
+sdm_data_sc3_10 <- furrr::future_map(survey_3M, sdm_data_fn, .options = furrr::furrr_options(seed = TRUE))
 toc()
 
 tic()
@@ -470,7 +476,7 @@ sdm_AR1_sc3_10 <- furrr::future_map2(sdm_data_sc3_10, mesh_sdm_sc3_10, sdm_AR1_f
 toc()
 
 tic()
-sdm_newdata_sc3_10 <- furrr::future_map2(survey, sdm_data_sc3_10, sdm_newdata_fn)
+sdm_newdata_sc3_10 <- furrr::future_map2(survey_3M, sdm_data_sc3_10, sdm_newdata_fn)
 toc()
 
 tic()
@@ -487,7 +493,7 @@ toc()
 
 for( i in seq_along(sdm_index_IID_sc3_10)){
   sdm_index_IID_sc3_10[[i]]$iter <- as.numeric(i)
-  sdm_index_IID_sc3_10[[i]]$true <- true_index[[i]]$N
+  sdm_index_IID_sc3_10[[i]]$true <- true_index_3M[[i]]$N
 }
 sdm_index_IID_2_sc3_10 <- as.data.frame(do.call(rbind, sdm_index_IID_sc3_10))
 sdm_index_IID_2_sc3_10$scenario <- "3M"
@@ -498,7 +504,7 @@ toc()
 
 for( i in seq_along(sdm_index_AR1_sc3_10)){
   sdm_index_AR1_sc3_10[[i]]$iter <- as.numeric(i)
-  sdm_index_AR1_sc3_10[[i]]$true <- true_index[[i]]$N
+  sdm_index_AR1_sc3_10[[i]]$true <- true_index_3M[[i]]$N
 }
 sdm_index_AR1_2_sc3_10 <- as.data.frame(do.call(rbind, sdm_index_AR1_sc3_10))
 sdm_index_AR1_2_sc3_10$scenario <- "3M"
@@ -506,7 +512,7 @@ sdm_index_AR1_2_sc3_10$scenario <- "3M"
 ### 20 %
 
 tic()
-sdm_data_sc3_20 <- furrr::future_map(survey_sc3_20, sdm_data_fn, .options = furrr::furrr_options(seed = TRUE))
+sdm_data_sc3_20 <- furrr::future_map(survey_3H, sdm_data_fn, .options = furrr::furrr_options(seed = TRUE))
 toc()
 
 tic()
@@ -522,7 +528,7 @@ sdm_AR1_sc3_20 <- furrr::future_map2(sdm_data_sc3_20, mesh_sdm_sc3_20, sdm_AR1_f
 toc()
 
 tic()
-sdm_newdata_sc3_20 <- furrr::future_map2(survey, sdm_data_sc3_20, sdm_newdata_fn)
+sdm_newdata_sc3_20 <- furrr::future_map2(survey_3H, sdm_data_sc3_20, sdm_newdata_fn)
 toc()
 
 tic()
@@ -539,7 +545,7 @@ toc()
 
 for( i in seq_along(sdm_index_IID_sc3_20)){
   sdm_index_IID_sc3_20[[i]]$iter <- as.numeric(i)
-  sdm_index_IID_sc3_20[[i]]$true <- true_index[[i]]$N
+  sdm_index_IID_sc3_20[[i]]$true <- true_index_3H[[i]]$N
 }
 sdm_index_IID_2_sc3_20 <- as.data.frame(do.call(rbind, sdm_index_IID_sc3_20))
 sdm_index_IID_2_sc3_20$scenario <- "3H"
@@ -550,14 +556,14 @@ toc()
 
 for( i in seq_along(sdm_index_AR1_sc3_20)){
   sdm_index_AR1_sc3_20[[i]]$iter <- as.numeric(i)
-  sdm_index_AR1_sc3_20[[i]]$true <- true_index[[i]]$N
+  sdm_index_AR1_sc3_20[[i]]$true <- true_index_3H[[i]]$N
 }
 sdm_index_AR1_2_sc3_20 <- as.data.frame(do.call(rbind, sdm_index_AR1_sc3_20))
 sdm_index_AR1_2_sc3_20$scenario <- "3H"
 
 ################# Combining results
 
-str(true_index2)
+str(true_index_df)
 
 str(design_index_sc3_10_b)
 str(design_index_sc3_20_b)
@@ -584,7 +590,7 @@ results_scenario3 %>%
   ggplot(aes(year, N, group = type)) +
   geom_line(aes(colour = type), size=1) +
   facet_grid(iter~factor(type, levels=c('Design-based','Bootstrapped','IID','AR1')),  scales = "free_y")+
-  geom_line(aes(year, N), size=1, data= true_index2, inherit.aes = FALSE) +
+  geom_line(aes(year, N), size=1, data= true_index_3M_df, inherit.aes = FALSE) +
   geom_ribbon(aes(ymin = lwr, ymax = upr), alpha = 0.3)+
   labs(x = "Year", y = "N", colour = "type", fill = "type", size = "type")+
   #facet_wrap(~iter)+
@@ -598,7 +604,7 @@ results_scenario3 %>%
   ggplot(aes(year, N, group = type)) +
   geom_line(aes(colour = type), size=1) +
   facet_grid(iter~factor(type, levels=c('Design-based','Bootstrapped','IID','AR1')),  scales = "free_y")+
-  geom_line(aes(year, N), size=1, data= true_index2, inherit.aes = FALSE) +
+  geom_line(aes(year, N), size=1, data= true_index_3M_df, inherit.aes = FALSE) +
   geom_ribbon(aes(ymin = lwr, ymax = upr), alpha = 0.3)+
   labs(x = "Year", y = "N", colour = "type", fill = "type", size = "type")+
   #facet_wrap(~iter)+
