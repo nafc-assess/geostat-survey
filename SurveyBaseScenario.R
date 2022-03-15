@@ -102,10 +102,9 @@ toc()
 
 ############# True abundance
 
-true_index <- map(seq_along(survey), function(i){
-  survey[[i]]$setdet %>%
-    group_by(year) %>%
-    summarise(N = sum(N))})
+true_index <- map(seq_along(survey),function(i){
+  tibble(year = unique(survey[[i]]$sp_N$year), N = as.numeric(colSums(survey[[i]]$I)))
+})
 
 for( i in seq_along(true_index)){
   true_index[[i]]$iter <- as.numeric(i)
