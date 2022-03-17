@@ -293,7 +293,7 @@ sdm_prediction_AR1 <- furrr::future_map2(sdm_AR1, sdm_newdata, sdm_prediction_AR
 toc()
 
 sdm_index_IID_fn <- function(x){
-  index_IID <- get_index(x, bias_correct = TRUE) %>%
+  index_IID <- get_index(x, bias_correct = FALSE) %>%
     mutate(type = "IID", N = est)
 }
 
@@ -310,7 +310,7 @@ sdm_index_IID_2$scenario <- "base"
 
 
 sdm_index_AR1_fn <- function(x){
-  index_AR1 <- get_index(x, bias_correct = TRUE) %>%
+  index_AR1 <- get_index(x, bias_correct = FALSE) %>%
     mutate(type = "AR1", N = est)
 }
 
