@@ -1,11 +1,3 @@
-# reduced coverage efects... depth effects
-# what makes Tweedie blow up? can we simulate?
-# poly depth vs. s(); very bad if not flexible enough/wrong?
-# plot depth fitted vs. true
-# record random field SD
-# observation phi...
-# plot representative Bayesian resids and by depth
-
 # Experiment with various fits to SimSurvey output
 # Fix residuals?
 # 2022-01-24 SA
@@ -16,7 +8,7 @@ theme_set(theme_minimal())
 library(dplyr)
 library(sdmTMB)
 
-set.seed(3)
+set.seed(2)
 pop <- sim_abundance(
   ages = 1:20, # fish age vector
   years = 1:10, # year vector
@@ -59,17 +51,26 @@ pop <- sim_abundance(
       strat_splits = 2, # horizontally split strat
       method = "spline"
     ), # spline, loess, linear interpolation options
-    # ays_covar = sim_ays_covar(
-    #   range = 300, # adding noise correlated across space, year, and age dimensions -- covariance matrix, higher value higher spatial correlation
-    #   phi_age = 0.8, # strong correlation across ages
-    #   phi_year = 0.1
-    # ), # low correlation across years
-    ays_covar = sim_ays_covar(sd = 2.5, range = 200, phi_age = 0.5, phi_year = 0.9, group_ages = 12:20),
+    ays_covar = sim_ays_covar(
+      range = 300, # adding noise correlated across space, year, and age dimensions -- covariance matrix, higher value higher spatial correlation
+      phi_age = 0.8, # strong correlation across ages
+      phi_year = 0.1
+      # group_ages = seq(1, 20)
+    ), # low correlation across years
+    # ays_covar = sim_ays_covar(sd = 2.5, range = 200, phi_age = 0.5, phi_year = 0.9, group_ages = 12:20),
     depth_par = sim_parabola(
       mu = log(80), # defining relationship between abundance and depth, i.e., adding a parabolic depth 'preference', fish prefers occurring around 200 meters
-      sigma = 0.25, plot = FALSE, log_space = TRUE
+      sigma = 0.25, plot = FALSE, log_space = T
     )
   )
+
+# s <- sim_parabola(
+#   mu = 80,
+#   sigma = 70,
+#   plot = T,
+#   log_space = F
+# )
+# temp <- s(seq(0.1, 1000, length.out = 1000))
 
 survey <- sim_survey(
   pop, # sim_distribution
@@ -108,20 +109,8 @@ ctl <- sdmTMBcontrol(start = list(
   ln_kappa = rep(-4, 2)
 ))
 
-eq_N <- N ~ 0 + as.factor(year) + offset
-eq_D <- density ~ 0 + as.factor(year)
-eq_P <- present ~ 0 + as.factor(year)
-
-eq_N <- N ~ 0 + as.factor(year) + offset + poly(log(depth), 2)
-eq_D <- density ~ 0 + as.factor(year) + poly(log(depth), 2)
-eq_P <- present ~ 0 + as.factor(year) + poly(log(depth), 2)
-
-eq_N <- N ~ 0 + as.factor(year) + offset + s(log(depth), k = 6)
-eq_D <- density ~ 0 + as.factor(year) + s(log(depth), k = 6)
-eq_P <- present ~ 0 + as.factor(year) + s(log(depth), k = 6)
-
-# m0 <- sdmTMB(N ~ 0 + as.factor(year) + offset+ s(log(depth), k = 4),
-m0 <- sdmTMB(eq_N,
+# m0 <- sdmTMB(N ~ 0 + as.factor(year) + offset + s(log(depth), k = 4),
+m0 <- sdmTMB(N ~ 0 + as.factor(year) + offset,
   data = dat,
   mesh = mesh,
   time = "year",
@@ -131,29 +120,12 @@ m0 <- sdmTMB(eq_N,
 )
 # simulate(m0, nsim = 300) |> dharma_residuals(m0)
 # s <- simulate(m0, nsim = 1000)
-mean(s == 0)
-mean(dat$N == 0)
-m0$sd_report
-tidy(m0, "ran_pars")
-
-m_nb1 <- sdmTMB(eq_N,
-  data = dat,
-  mesh = mesh,
-  time = "year",
-  family = nbinom1(),
-  control = ctl,
-  silent = FALSE
-)
-
-m_pois <- sdmTMB(eq_N,
-  data = dat,
-  mesh = mesh,
-  time = "year",
-  family = poisson(),
-  control = ctl,
-  silent = FALSE
-)
+# mean(s == 0)
+# mean(dat$N == 0)
+# m0$sd_report
+# tidy(m0, "ran_pars")
 # simulate(m0, re_form = NA, nsim = 300) |> dharma_residuals(m0)
+
 #
 # # mcmc residuals ----------------------------------------------------
 #
@@ -199,54 +171,32 @@ m_pois <- sdmTMB(eq_N,
 dat$density <- dat$N / dat$tow_area
 dat$present <- ifelse(dat$density > 0, 1L, 0L)
 
-# m1 <- sdmTMB(present ~ 0 + as.factor(year) + s(log(depth), k = 4),
-m1 <- sdmTMB(eq_P,
-  data = dat,
-  mesh = mesh,
-  time = "year",
-  family = binomial(),
-  control = ctl,
-  silent = FALSE
-)
-
-# m_tw <- sdmTMB(density ~ 0 + as.factor(year) + s(log(depth), k = 4),
-m_tw <- sdmTMB(eq_D,
-  data = dat,
-  mesh = mesh,
-  time = "year",
-  family = tweedie(),
-  control = ctl,
-  silent = FALSE
-)
+# m1 <- sdmTMB(present ~ 0 + as.factor(year),
+#   data = dat,
+#   mesh = mesh,
+#   time = "year",
+#   family = binomial(),
+#   control = ctl,
+#   silent = FALSE
+# )
 
 # simulate(m1, nsim = 300) |> dharma_residuals(m1)
 #
-dat_present <- filter(dat, present == 1L)
-mesh_present <- sdmTMB::make_mesh(
-  dat_present,
-  xy_cols = c("x", "y"),
-  cutoff = 20,
-  mesh = mesh$mesh
-)
-# m2 <- sdmTMB(density ~ 0 + as.factor(year)+ s(log(depth), k = 4),
-m2 <- sdmTMB(eq_D,
-  data = dat_present,
-  mesh = mesh_present,
-  time = "year",
-  family = Gamma(link = "log"),
-  control = ctl,
-  silent = FALSE
-)
-
-m_ln <- sdmTMB(eq_D,
-  data = dat_present,
-  mesh = mesh_present,
-  time = "year",
-  family = lognormal(link = "log"),
-  control = ctl,
-  silent = FALSE
-)
-
+# dat_present <- filter(dat, present == 1L)
+# mesh_present <- sdmTMB::make_mesh(
+#   dat_present,
+#   xy_cols = c("x", "y"),
+#   cutoff = 20,
+#   mesh = mesh$mesh
+# )
+# m2 <- sdmTMB(density ~ 0 + as.factor(year),
+#   data = dat_present,
+#   mesh = mesh_present,
+#   time = "year",
+#   family = Gamma(link = "log"),
+#   control = ctl,
+#   silent = FALSE
+# )
 
 # m2_tnb <- sdmTMB(N ~ 0 + as.factor(year),
 #   data = dat_present,
@@ -325,17 +275,11 @@ grid_dat <- left_join(grid_dat, select(xy_sim, x, y, depth))
 
 tow_area <- survey$setdet$tow_area[1] # cell and tow area is consistent in the simulation
 cell_area <- survey$setdet$cell_area[1]
-pred_pos <- predict(m2, newdata = grid_dat, nsim = 200L)
-pred_bin <- predict(m1, newdata = grid_dat, nsim = 200L)
-pred_tot <- log(exp(pred_pos) * plogis(pred_bin))
+# pred_pos <- predict(m2, newdata = grid_dat, sims = 200L)
+# pred_bin <- predict(m1, newdata = grid_dat, sims = 200L)
+# pred_tot <- log(exp(pred_pos) * plogis(pred_bin))
 
-
-pred_ln <- predict(m_ln, newdata = grid_dat, nsim = 200L)
-pred_ln <- log(exp(pred_pos) * plogis(pred_ln))
-
-
-ind_delta_gamma <- get_index_sims(pred_tot, area = rep(cell_area, nrow(grid_dat)))
-ind_ln <- get_index_sims(pred_ln, area = rep(cell_area, nrow(grid_dat)))
+# ind_delta_gamma <- get_index_sims(pred_tot, area = rep(cell_area, nrow(grid_dat)))
 # ggplot(ind_delta, aes(year, ymin = lwr, ymax = upr, y = est)) +
 #   geom_ribbon() +
 #   geom_line()
@@ -343,24 +287,13 @@ ind_ln <- get_index_sims(pred_ln, area = rep(cell_area, nrow(grid_dat)))
 pred_nb2 <- predict(m0, newdata = grid_dat, nsim = 200L)
 ind_nbinom2 <- get_index_sims(pred_nb2, area = rep(cell_area, nrow(grid_dat)))
 
-pred_nb1 <- predict(m_nb1, newdata = grid_dat, nsim = 200L)
-ind_nbinom1 <- get_index_sims(pred_nb1, area = rep(cell_area, nrow(grid_dat)))
+# pred_nb2 <- predict(m0, newdata = grid_dat, return_tmb_object = T, area = cell_area)
+# ind_nbinom2 <- get_index(pred_nb2, bias_correct = T)
 
-pred_pois <- predict(m_pois, newdata = grid_dat, nsim = 200L)
-ind_pois <- get_index_sims(pred_pois, area = rep(cell_area, nrow(grid_dat)))
-
-pred_tw <- predict(m_tw, newdata = grid_dat, nsim = 200L)
-ind_tw <- get_index_sims(pred_tw, area = rep(cell_area, nrow(grid_dat)))
-
-#
 # pred_pos_tnb <- predict(m2_tnb, newdata = grid_dat, sims = 200L)
 # pred_tot <- log(exp(pred_pos_tnb) * plogis(pred_bin))
 
-ind_delta_gamma <- get_index_sims(pred_tot, area = rep(cell_area, nrow(grid_dat)))
-
-
-
-
+# ind_delta_gamma <- get_index_sims(pred_tot, area = rep(cell_area, nrow(grid_dat)))
 
 # pred_nb2 <- predict(m0, newdata = grid_dat, return_tmb_object = TRUE, area = rep(cell_area / tow_area, nrow(grid_dat)))
 # ind_nbinom2 <- get_index(pred_nb2, bias_correct = TRUE)
@@ -381,11 +314,7 @@ strat_abund <- tibble::as_tibble(survey$total_strat) %>%
 
 index <-
   mutate(ind_nbinom2, type = "Model-based NB2", N = est) %>%
-  bind_rows(mutate(ind_delta_gamma, type = "Model-based delta-Gamma", N = est)) |>
-  bind_rows(mutate(ind_tw, type = "Model-based Tweedie", N = est)) |>
-  bind_rows(mutate(ind_nbinom1, type = "Model-based NB1", N = est)) |>
-  bind_rows(mutate(ind_pois, type = "Model-based Poisson", N = est)) |>
-  bind_rows(mutate(ind_ln, type = "Model-based delta-lognormal", N = est)) |>
+  # bind_rows(mutate(ind_delta_gamma, type = "Model-based delta-Gamma", N = est)) |>
   bind_rows(true_abund) %>%
   bind_rows(strat_abund)
 
@@ -406,14 +335,4 @@ g2 <- index |>
   scale_y_log10()
 
 g <- cowplot::plot_grid(g1, g2, nrow = 2L)
-# print(g)
-
-g <- index |>
-  filter(type != "True") %>%
-  ggplot(aes(year, N, group = type, fill = type)) +
-  geom_line(aes(colour = type)) +
-  geom_ribbon(aes(ymin = lwr, ymax = upr), alpha = 0.2) +
-  scale_y_log10() +
-  facet_wrap(~type) +
-  geom_line(data = dplyr::select(true_abund, -type), colour = "black", inherit.aes = FALSE, mapping = aes(year, N))
 print(g)
