@@ -245,6 +245,23 @@ tic()
 mesh_sdm <- furrr::future_map(sdm_data, mesh_sdm_fn, .options = furrr::furrr_options(seed = TRUE))
 toc()
 
+
+sdm_newdata_fn <- function(survey, sdm_data) {
+
+  grid_dat <- as_tibble(dplyr::select(survey$grid_xy, x, y, depth)) %>% distinct()
+  grid_dat <- purrr::map_dfr(sort(unique(sdm_data$year)), ~ bind_cols(grid_dat, year = .))
+  grid_dat$offset <- 0
+  grid_dat$area <-survey$setdet$cell_area[1]
+  return(grid_dat)
+}
+
+tic()
+sdm_newdata <- furrr::future_map2(survey, sdm_data, sdm_newdata_fn)
+toc()
+
+
+### IID + NB2
+
 sdm_IID_fn <- function(x, y){
 
   fit_IID <- sdmTMB(N ~ 0 + as.factor(year) + offset,
@@ -260,6 +277,87 @@ tic()
 sdm_IID <- furrr::future_map2(sdm_data, mesh_sdm, sdm_IID_fn)
 toc()
 
+sdm_prediction_IID_fn <- function(x, y){
+
+  pred_IID <- predict(x,
+                      newdata = y,
+                      return_tmb_object = TRUE,
+                      #nsim = 100,
+                      area = y$area)
+}
+
+tic()
+sdm_prediction_IID <- furrr::future_map2(sdm_IID, sdm_newdata, sdm_prediction_IID_fn, .options = furrr::furrr_options(seed = TRUE))
+toc()
+
+sdm_index_IID_fn <- function(x){
+  index_IID <- get_index(x, bias_correct = FALSE) %>%
+    mutate(type = "IID + NB2", N = est)
+}
+
+tic()
+sdm_index_IID <- furrr::future_map(sdm_prediction_IID, sdm_index_IID_fn)
+toc()
+
+for( i in seq_along(sdm_index_IID)){
+  sdm_index_IID[[i]]$iter <- as.numeric(i)
+  sdm_index_IID[[i]]$true <- true_index[[i]]$N
+  sdm_index_IID[[i]]$species <- "cod"
+}
+sdm_index_IID_2 <- as.data.frame(do.call(rbind, sdm_index_IID))
+sdm_index_IID_2$scenario <- "base"
+
+### IID + NB2 + depth
+
+
+sdm_IID_depth_fn <- function(x, y){
+
+  fit_IID_depth <- sdmTMB(N ~  0 + as.factor(year) + offset + s(log(depth), k= 4),
+                    data = x,
+                    mesh = y,
+                    time = "year",
+                    family = nbinom2(link = "log"),
+                    spatial = TRUE,
+                    spatiotemporal = "IID")
+}
+
+tic()
+sdm_IID_depth <- furrr::future_map2(sdm_data, mesh_sdm, sdm_IID_depth_fn)
+toc()
+
+
+sdm_prediction_IID_depth_fn <- function(x, y){
+
+  pred_IID <- predict(x,
+                      newdata = y,
+                      return_tmb_object = TRUE,
+                      #nsim = 100,
+                      area = y$area)
+}
+
+tic()
+sdm_prediction_IID_depth <- furrr::future_map2(sdm_IID_depth, sdm_newdata, sdm_prediction_IID_depth_fn, .options = furrr::furrr_options(seed = TRUE))
+toc()
+
+sdm_index_IID_depth_fn <- function(x){
+  index_IID <- get_index(x, bias_correct = FALSE) %>%
+    mutate(type = "IID + NB2 + depth", N = est)
+}
+
+tic()
+sdm_index_IID_depth <- furrr::future_map(sdm_prediction_IID_depth, sdm_index_IID_depth_fn)
+toc()
+
+for( i in seq_along(sdm_index_IID_depth)){
+  sdm_index_IID_depth[[i]]$iter <- as.numeric(i)
+  sdm_index_IID_depth[[i]]$true <- true_index[[i]]$N
+  sdm_index_IID[[i]]$species <- "cod"
+}
+sdm_index_IID_depth_2 <- as.data.frame(do.call(rbind, sdm_index_IID_depth))
+sdm_index_IID_depth_2$scenario <- "base"
+
+
+### AR1 + NB2
 
 sdm_AR1_fn <- function(x, y) {
 
@@ -276,34 +374,6 @@ tic()
 sdm_AR1 <- furrr::future_map2(sdm_data, mesh_sdm, sdm_AR1_fn)
 toc()
 
-sdm_newdata_fn <- function(survey, sdm_data) {
-
-  grid_dat <- as_tibble(dplyr::select(survey$grid_xy, x, y, depth)) %>% distinct()
-  grid_dat <- purrr::map_dfr(sort(unique(sdm_data$year)), ~ bind_cols(grid_dat, year = .))
-  grid_dat$offset <- 0
-  grid_dat$area <-survey$setdet$cell_area[1]
-  return(grid_dat)
-}
-
-tic()
-sdm_newdata <- furrr::future_map2(survey, sdm_data, sdm_newdata_fn)
-toc()
-
-
-sdm_prediction_IID_fn <- function(x, y){
-
-  pred_IID <- predict(x,
-                      newdata = y,
-                      return_tmb_object = TRUE,
-                      #nsim = 100,
-                      area = y$area)
-}
-
-tic()
-sdm_prediction_IID <- furrr::future_map2(sdm_IID, sdm_newdata, sdm_prediction_IID_fn, .options = furrr::furrr_options(seed = TRUE))
-toc()
-
-
 sdm_prediction_AR1_fn <- function(x, y){
   pred_AR1 <- predict(x,
                       newdata = y,
@@ -316,27 +386,10 @@ tic()
 sdm_prediction_AR1 <- furrr::future_map2(sdm_AR1, sdm_newdata, sdm_prediction_AR1_fn, .options = furrr::furrr_options(seed = TRUE))
 toc()
 
-sdm_index_IID_fn <- function(x){
-  index_IID <- get_index(x, bias_correct = FALSE) %>%
-    mutate(type = "IID", N = est)
-}
-
-tic()
-sdm_index_IID <- furrr::future_map(sdm_prediction_IID, sdm_index_IID_fn)
-toc()
-
-for( i in seq_along(sdm_index_IID)){
-  sdm_index_IID[[i]]$iter <- as.numeric(i)
-  sdm_index_IID[[i]]$true <- true_index[[i]]$N
-  sdm_index_IID[[i]]$species <- "cod"
-}
-sdm_index_IID_2 <- as.data.frame(do.call(rbind, sdm_index_IID))
-sdm_index_IID_2$scenario <- "base"
-
 
 sdm_index_AR1_fn <- function(x){
   index_AR1 <- get_index(x, bias_correct = FALSE) %>%
-    mutate(type = "AR1", N = est)
+    mutate(type = "AR1 + NB2", N = est)
 }
 
 tic()
@@ -352,15 +405,116 @@ sdm_index_AR1_2 <- as.data.frame(do.call(rbind, sdm_index_AR1))
 sdm_index_AR1_2$scenario <- "base"
 
 
+
+### IID + TW
+
+sdm_IID_tw_fn <- function(x, y){
+
+  fit_IID_tw <- sdmTMB(density ~ 0 + as.factor(year),
+                    data = x,
+                    mesh = y,
+                    time = "year",
+                    family = tweedie(),
+                    spatial = TRUE,
+                    spatiotemporal = "IID")
+}
+
+tic()
+sdm_IID_tw <- furrr::future_map2(sdm_data, mesh_sdm, sdm_IID_tw_fn)
+toc()
+
+sdm_prediction_IID_tw_fn <- function(x, y){
+
+  pred_IID <- predict(x,
+                      newdata = y,
+                      return_tmb_object = TRUE,
+                      #nsim = 100,
+                      area = y$area)
+}
+
+tic()
+sdm_prediction_IID_tw <- furrr::future_map2(sdm_IID_tw, sdm_newdata, sdm_prediction_IID_tw_fn, .options = furrr::furrr_options(seed = TRUE))
+toc()
+
+sdm_index_IID_tw_fn <- function(x){
+  index_IID <- get_index(x, bias_correct = FALSE) %>%
+    mutate(type = "IID + TW", N = est)
+}
+
+tic()
+sdm_index_IID_tw <- furrr::future_map(sdm_prediction_IID_tw, sdm_index_IID_tw_fn)
+toc()
+
+for( i in seq_along(sdm_index_IID_tw)){
+  sdm_index_IID_tw[[i]]$iter <- as.numeric(i)
+  sdm_index_IID_tw[[i]]$true <- true_index[[i]]$N
+  sdm_index_IID_tw[[i]]$species <- "cod"
+}
+sdm_index_IID_tw_2 <- as.data.frame(do.call(rbind, sdm_index_IID_tw))
+sdm_index_IID_tw_2$scenario <- "base"
+
+
+### IID + TW + depth
+
+fit_IID_tw_depth <- function(x, y){
+
+  fit_IID_tw_depth <- sdmTMB(density ~ 0 + as.factor(year) + s(log(depth), k= 4),
+                       data = x,
+                       mesh = y,
+                       time = "year",
+                       family = tweedie(),
+                       spatial = TRUE,
+                       spatiotemporal = "IID")
+}
+
+tic()
+sdm_IID_tw_depth <- furrr::future_map2(sdm_data, mesh_sdm, fit_IID_tw_depth)
+toc()
+
+sdm_prediction_IID_tw_fn_depth <- function(x, y){
+
+  pred_IID_depth <- predict(x,
+                      newdata = y,
+                      return_tmb_object = TRUE,
+                      #nsim = 100,
+                      area = y$area)
+}
+
+tic()
+sdm_prediction_IID_tw_depth <- furrr::future_map2(sdm_IID_tw, sdm_newdata, sdm_prediction_IID_tw_fn_depth, .options = furrr::furrr_options(seed = TRUE))
+toc()
+
+sdm_index_IID_tw_fn_depth <- function(x){
+  index_IID <- get_index(x, bias_correct = FALSE) %>%
+    mutate(type = "IID + TW + depth", N = est)
+}
+
+tic()
+sdm_index_IID_tw_depth <- furrr::future_map(sdm_prediction_IID_tw, sdm_index_IID_tw_fn_depth)
+toc()
+
+for( i in seq_along(sdm_index_IID_tw_depth)){
+  sdm_index_IID_tw_depth[[i]]$iter <- as.numeric(i)
+  sdm_index_IID_tw_depth[[i]]$true <- true_index[[i]]$N
+  sdm_index_IID_tw_depth[[i]]$species <- "cod"
+}
+sdm_index_IID_tw_depth_2 <- as.data.frame(do.call(rbind, sdm_index_IID_tw_depth))
+sdm_index_IID_tw_depth_2$scenario <- "base"
+
+
+
 ############# Combining results
 
 str(true_index_cod)
 str(design_index2)
 str(boot_index2)
 str(sdm_index_IID_2)
+str(sdm_index_IID_depth_2)
 str(sdm_index_AR1_2)
+str(sdm_index_IID_tw_2)
+str(sdm_index_IID_tw_depth_2)
 
-results_base_cod <- bind_rows(design_index2, boot_index2, sdm_index_IID_2, sdm_index_AR1_2)
+results_base_cod <- bind_rows(design_index2, boot_index2, sdm_index_IID_2, sdm_index_AR1_2, sdm_index_IID_tw_2, sdm_index_IID_depth_2)
 
 
 ggplot(results_base_cod, aes(year, N, group = type)) +
@@ -375,12 +529,12 @@ ggplot(results_base_cod, aes(year, N, group = type)) +
 
 results_base_cod %>%
   #filter(scenario == "2M")%>%
-  filter(iter == "2") %>%
-  mutate(type = factor(type, levels=c('Design-based','Bootstrapped','IID','AR1')))%>%
+  filter(iter == "1") %>%
+  #mutate(type = factor(type, levels=c('Design-based','Bootstrapped','IID','AR1')))%>%
   ggplot(aes(year, log(N), group = type, color=factor(type))) +
   geom_point(size=1, position = position_dodge(width = 0.6)) +
   geom_errorbar(aes(x=year,ymin=log(lwr), ymax=log(upr)), width=0, position = position_dodge(width = 0.6)) +
-  geom_point(aes(year, log(N)), size=2, data=true_index_cod %>% filter(iter == "2"), inherit.aes = FALSE)+
+  geom_point(aes(year, log(N)), size=2, data=true_index_cod %>% filter(iter == "1"), inherit.aes = FALSE)+
   labs(color = "Type") +
   xlab("Year") +
   ylab("log(N)") +
