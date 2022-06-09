@@ -125,22 +125,24 @@ total_strats_dfr_y20$scale <- (total_strats_dfr_y20$sigma ^ 2) / total_strats_df
 total_strats_dfr_y20$shape <- total_strats_dfr_y20$total / total_strats_dfr_y20$scale
 
 add_curve <- function(plot, i) {
-  return(plot + stat_function(aes(x=total_strats_dfr_y20$total[i], colour = "sim"), fun = dgamma, col=i, args = list(shape=total_strats_dfr_y20$shape[i], scale=total_strats_dfr_y20$scale[i])))
+  return(plot + stat_function(aes(x=total_strats_dfr_y20$total[i], colour = "sim"), fun = dgamma,
+                              col=i, args = list(shape=total_strats_dfr_y20$shape[i], scale=total_strats_dfr_y20$scale[i])))
 }
 
-p1 <- ggplot(total_strats_dfr_y20, aes(x = total))+
-  geom_histogram(aes(y=..density..),fill="grey",alpha=0.8, bins = 20)  +
+p1 <- ggplot(total_strats_dfr_y20, aes(x = total)) +
+  geom_density(aes(y=..density..),fill="grey",alpha=0.8)  +
+  xlim(0, 2e+09) +
   theme_minimal()
 
 
-for (i in 1:1000){ # choose how many sims you want to use in the plot
-  p1<- add_curve(p1, i)
+for (i in 1:1000){ # you can choose how many sims you want to use in the plot
+  p1 <- add_curve(p1, i)
 }
 
 p1
 
 
-### Bootstapping
+### Bootstrapping
 
 setdets <- map(survey, function(x) {pluck(x, 'setdet')}) ### plucking only setdet element
 
@@ -182,4 +184,53 @@ boot_one_year <- function(data, reps) {
 tic()
 boot_index <- furrr::future_map_dfr(setdet_sim, boot_one_year, reps=1000, .options = furrr::furrr_options(seed = TRUE))
 toc()
+
+ggplot(boot_index, aes(x = estimates, group=sim_number))+
+  geom_density(aes(y=..density..),fill="grey95", alpha=0.9)+
+  ggtitle("Bootstrapped abundance distribution (1000 simulations)")+
+  theme_minimal()
+
+boot_index |>
+  filter(sim_number == 5) |>
+ggplot(aes(x = estimates))+
+  geom_density(aes(y=..density..),fill="grey95", alpha=0.9)+
+  geom_vline(xintercept = mean(estimates), linetype="dotted", color = "blue", size=1.5) +
+  xlim(0, 3e+09)+
+  stat_function(aes(x=total_strats_dfr_y20$total[5], colour = "sim"), fun = dgamma, col="darkorange",
+                args = list(shape=total_strats_dfr_y20$shape[5], scale=total_strats_dfr_y20$scale[5]), size=2) +
+  ggtitle("Simulation 5 - bootstrapped (grey area) and gamma distribution (orange line)") +
+
+  theme_minimal()
+
+mean_boots <- boot_index |>
+  group_by(sim_number) |>
+  summarise(mean_boot = mean(estimates))
+
+plot_combine <- function(x) {
+  ggplot(boot_index |> filter (sim_number == x), aes(x = estimates))+
+    geom_density(aes(y=..density..),fill="grey95", alpha=0.9)+
+    geom_vline(xintercept = mean_boots[x,]$mean_boot, color = "black", size=1.5) +
+    xlim(0, 3e+09)+
+    stat_function(aes(x=total_strats_dfr_y20$total[x], colour = "sim"), fun = dgamma, col="darkorange",
+                  args = list(shape=total_strats_dfr_y20$shape[x], scale=total_strats_dfr_y20$scale[x]), size=2) +
+    geom_vline(xintercept = total_strats_dfr_y20$total[x], linetype="dashed", color = "darkorange", size=1.5) +
+    ggtitle("Single simulation - bootstrapped (grey area) and gamma distribution (orange line)") +
+    theme_minimal()+
+    theme(legend.position="bottom")
+}
+
+plot_combine(5)
+ggsave("sim5.png", width = 8, height = 4)
+
+plot_combine(1)
+ggsave("sim1.png", width = 8, height = 4)
+
+plot_combine(15)
+ggsave("sim15.png", width = 8, height = 4)
+
+plot_combine(650)
+plot_combine(1000)
+plot_combine(88)
+plot_combine(431)
+
 
