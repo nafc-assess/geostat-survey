@@ -142,36 +142,6 @@ p1
 
 ### Bootstapping
 
-sumYst <- function(data, i = seq_len(nrow(data))) {
-  data[i, ] |>
-    ### stratum level
-    group_by(year, strat, strat_area) |>
-    summarise(meanYh = mean(n), tow_area = mean(tow_area), .groups = "drop_last") |>
-    mutate(Nh = strat_area/(tow_area)) |>
-    group_by(year) |>
-    mutate(N = sum(Nh), Wh = Nh/N, WhmeanYh = Wh * meanYh)|>
-    ### year level
-    summarise(sumYst= mean(N) * sum(WhmeanYh), .groups = "drop_last") |>
-    pull(sumYst)
-}
-
-boot_one_year <- function(data, reps) {
-  b <- boot::boot(data, statistic = sumYst, strata = data$strat, R = reps)
-  suppressWarnings(bci <- boot::boot.ci(b, type = "bca"))
-  mean_boot <- mean(b$t)
-  sd_boot <- sd(b$t)
-  boot <- data.table(
-    sim = mean(data$sim_number),
-    mean_boot= mean_boot,
-    sd_boot = sd_boot,
-    lwr = bci$bca[[4]],
-    upr = bci$bca[[5]],
-    cv = sd_boot / mean_boot,
-    type = "Bootstrapped"
-  )
-  return(boot)
-}
-
 setdets <- map(survey, function(x) {pluck(x, 'setdet')}) ### plucking only setdet element
 
 for( i in seq_along(setdets)){
@@ -189,6 +159,25 @@ for( i in seq_along(setdets)){
 
 setdet_sim <- unlist(setdet_sim,recursive=FALSE)
 
+
+sumYst <- function(data, i = seq_len(nrow(data))) {
+  data[i, ] |>
+    ### stratum level
+    group_by(year, strat, strat_area) |>
+    summarise(meanYh = mean(n), tow_area = mean(tow_area), .groups = "drop_last") |>
+    mutate(Nh = strat_area/(tow_area)) |>
+    group_by(year) |>
+    mutate(N = sum(Nh), Wh = Nh/N, WhmeanYh = Wh * meanYh)|>
+    ### year level
+    summarise(sumYst= mean(N) * sum(WhmeanYh), .groups = "drop_last") |>
+    pull(sumYst)
+}
+
+boot_one_year <- function(data, reps) {
+  b <- boot::boot(data, statistic = sumYst, strata = data$strat, R = reps)
+  boot <- data.table (b$t) |> rename(estimate = V1) |> mutate(sim_number = mean(data$sim_number))
+  return(boot)
+}
 
 tic()
 boot_index <- furrr::future_map_dfr(setdet_sim, boot_one_year, reps=1000, .options = furrr::furrr_options(seed = TRUE))
