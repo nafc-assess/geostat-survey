@@ -159,25 +159,18 @@ boot_one_year <- function(data, reps) {
   b <- boot::boot(data, statistic = sumYst, strata = data$strat, R = reps)
   suppressWarnings(bci <- boot::boot.ci(b, type = "bca"))
   mean_boot <- mean(b$t)
+  sd_boot <- sd(b$t)
   boot <- data.table(
-    pop = mean(data$pop),
+    sim = mean(data$sim_number),
     mean_boot= mean_boot,
+    sd_boot = sd_boot,
     lwr = bci$bca[[4]],
     upr = bci$bca[[5]],
-    cv = sd(b$t) / mean_boot,
+    cv = sd_boot / mean_boot,
     type = "Bootstrapped"
   )
   return(boot)
 }
-
-boot_wrapper <- function(data, reps) {
-  out <- data |>
-    split(data$year) |>
-    purrr::map_dfr(boot_one_year, reps = reps, .id = "year")
-  out$year <- as.numeric(out$year)
-  return(out)
-}
-
 
 setdets <- map(survey, function(x) {pluck(x, 'setdet')}) ### plucking only setdet element
 
@@ -198,10 +191,6 @@ setdet_sim <- unlist(setdet_sim,recursive=FALSE)
 
 
 tic()
-boot_index <- furrr::future_map_dfr(setdet_sim, boot_wrapper, reps=1000, .options = furrr::furrr_options(seed = TRUE))
+boot_index <- furrr::future_map_dfr(setdet_sim, boot_one_year, reps=1000, .options = furrr::furrr_options(seed = TRUE))
 toc()
-
-
-
-
 
