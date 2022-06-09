@@ -190,18 +190,6 @@ ggplot(boot_index, aes(x = estimates, group=sim_number))+
   ggtitle("Bootstrapped abundance distribution (1000 simulations)")+
   theme_minimal()
 
-boot_index |>
-  filter(sim_number == 5) |>
-ggplot(aes(x = estimates))+
-  geom_density(aes(y=..density..),fill="grey95", alpha=0.9)+
-  geom_vline(xintercept = mean(estimates), linetype="dotted", color = "blue", size=1.5) +
-  xlim(0, 3e+09)+
-  stat_function(aes(x=total_strats_dfr_y20$total[5], colour = "sim"), fun = dgamma, col="darkorange",
-                args = list(shape=total_strats_dfr_y20$shape[5], scale=total_strats_dfr_y20$scale[5]), size=2) +
-  ggtitle("Simulation 5 - bootstrapped (grey area) and gamma distribution (orange line)") +
-
-  theme_minimal()
-
 mean_boots <- boot_index |>
   group_by(sim_number) |>
   summarise(mean_boot = mean(estimates))
@@ -232,5 +220,3 @@ plot_combine(650)
 plot_combine(1000)
 plot_combine(88)
 plot_combine(431)
-
-
