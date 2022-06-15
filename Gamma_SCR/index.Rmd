@@ -1,20 +1,11 @@
 ---
-title: "Title Here (*Latin Species Name*)"
-author: "John Doe^1^, John Smith^2^"
-
-# There is currently no affiliation section for Rmarkdown word output, 
-# so augment the date sction with affiliations
+title: "Approximating uncertainty around survey indices from stratified-random trawl surveys using the Gamma distribution"
+author: "Paul M. Regular, Mariano Koen-Alonso, Semra Yalcin, Andrea M.J. Perreault, Laura J. Wheeland"
 date: | 
-    ^1^Institution One\       
-    ^2^Institution Two\
+    Northwest Atlantic Fisheries Center, Fisheries and Oceans Canada, P.O.Box 5667, St. John’s, NL, A1C 5X1, Canada\       
     \
     `r format(Sys.time(), "%Y-%m-%d")` 
-abstract: |
-  Here is the abstract text.
 output: NAFOdown::word_scr
-
-# ------------
-# End of options to set
 knit: bookdown::render_book
 link-citations: true
 bibliography: bib/refs.bib
