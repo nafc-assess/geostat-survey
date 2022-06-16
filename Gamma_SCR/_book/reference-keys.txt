@@ -1,7 +1,6 @@
 introduction
 methods
-results
+results-and-discussion
 figures
 app:appendix-a
-app:appendix-b
 colophon
