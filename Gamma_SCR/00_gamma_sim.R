@@ -1,166 +1,97 @@
-# redfish
 
 #############  Packages
 library(SimSurvey)
-library(sdmTMB)
 library(tidyr)
 library(future)
 library(tictoc)
 library(ggplot2)
-library(data.table)
+library(ggridges)
 library(dplyr)
 library(purrr)
+library(data.table)
+library(NAFOdown)
 
 plan(multisession, workers = floor(availableCores()/2))
 
+n_sims <- 50
+n_boot <- 1000
+
 set.seed(794)
 population <- sim_abundance(ages = 1:50,
-                       years = 1:20,
-                       R = sim_R(log_mean = log(600000000),
-                                 log_sd = 0.6,
-                                 random_walk = F),
-                       Z = sim_Z(log_mean = log(0.2),
-                                 log_sd = 0.2,
-                                 phi_age = 0.4,
-                                 phi_year = 0.4),
-                       N0 = sim_N0(N0 = "exp", plot = FALSE),
-                       growth = sim_vonB(Linf = 30, L0 = 0,      #roughly based on Cadigan & Compana 2016
-                                         K = 0.1, log_sd = 0.13,
-                                         length_group = 1, digits = 0)) |>
-    sim_distribution(grid = make_grid(x_range = c(-150, 150),
-                                      y_range = c(-150, 150),
-                                      res = c(10, 10),
-                                      shelf_depth = 60,
-                                      shelf_width = 170,
-                                      depth_range = c(0, 1600),
-                                      n_div = 2,
-                                      strat_breaks = seq(0, 1600, by = 65),
-                                      strat_splits = 4,
-                                      method = "bezier"),
-                     ays_covar = sim_ays_covar(sd = 2,
-                                               range = 200,
-                                               #lambda = 0.5,
-                                               #model = "matern",
-                                               phi_age = 0.5,
-                                               phi_year = 0.9,
-                                               #group_ages = c(1,20:24)
-                     ),
-                     depth_par = sim_parabola(mu = log(190),
-                                              sigma = 0.3,
-                                              log_space = TRUE))
+                            years = 1:20,
+                            R = sim_R(log_mean = log(600000000),
+                                      log_sd = 0.6,
+                                      random_walk = F),
+                            Z = sim_Z(log_mean = log(0.2),
+                                      log_sd = 0.2,
+                                      phi_age = 0.4,
+                                      phi_year = 0.4),
+                            N0 = sim_N0(N0 = "exp", plot = FALSE),
+                            growth = sim_vonB(Linf = 30, L0 = 0,      #roughly based on Cadigan & Compana 2016
+                                              K = 0.1, log_sd = 0.13,
+                                              length_group = 1, digits = 0)) |>
+  sim_distribution(grid = make_grid(x_range = c(-150, 150),
+                                    y_range = c(-150, 150),
+                                    res = c(10, 10),
+                                    shelf_depth = 60,
+                                    shelf_width = 170,
+                                    depth_range = c(0, 1600),
+                                    n_div = 2,
+                                    strat_breaks = seq(0, 1600, by = 65),
+                                    strat_splits = 4,
+                                    method = "bezier"),
+                   ays_covar = sim_ays_covar(sd = 2,
+                                             range = 200,
+                                             #lambda = 0.5,
+                                             #model = "matern",
+                                             phi_age = 0.5,
+                                             phi_year = 0.9,
+                                             #group_ages = c(1,20:24)
+                   ),
+                   depth_par = sim_parabola(mu = log(190),
+                                            sigma = 0.3,
+                                            log_space = TRUE))
 
 
-survey_fn <- function(n_sims) {
-    sim_survey(population,
-               n_sims = n_sims,
-               q = sim_logistic(k = 1, x0 = 6.5),
-               trawl_dim = c(1.5, 0.02),
-               resample_cells = FALSE,
-               binom_error = TRUE,
-               min_sets = 2,
-               set_den = 1/1000,
-               lengths_cap = 250,
-               ages_cap = 20,
-               age_sampling = "stratified",
-               age_length_group = 1,
-               age_space_group = "division") |>
-    run_strat()
-}
+survey <- sim_survey(population,
+                     n_sims = n_sims,
+                     q = sim_logistic(k = 1, x0 = 6.5),
+                     trawl_dim = c(1.5, 0.02),
+                     resample_cells = FALSE,
+                     binom_error = TRUE,
+                     min_sets = 2,
+                     set_den = 1/1000,
+                     lengths_cap = 250,
+                     ages_cap = 20,
+                     age_sampling = "stratified",
+                     age_length_group = 1,
+                     age_space_group = "division") |>
+  run_strat()
 
-nsims=replicate(50, 20, FALSE) ## each run is for 20 sims within 50 loops (1000 total).
+## Density from the Gamma distribution
 
-tic()
-survey <- furrr::future_map(nsims, survey_fn, .options = furrr::furrr_options(seed = TRUE, packages = "SimSurvey"))
-toc()
+total_strat <- survey$total_strat |>
+  mutate(sigma = sampling_units * sd,
+         scale = sigma ^ 2 / total,
+         shape = total / scale)
 
-
-### combining the design-based estimations from all runs
-
-total_strats <- map(survey, function(x) {pluck(x, 'total_strat')})
-
-for( i in seq_along(total_strats)){
-  total_strats[[i]]$sim_number <- total_strats[[i]]$sim + ((as.numeric(i) - 1) * 100)
-} # Updating the unique sim number (since each batch has 100 sims within it)
-
-total_strats_dfr <- do.call(rbind.data.frame, total_strats)
-
-
-### Filtering the year 20
-
-total_strats_dfr_y20 <- total_strats_dfr |> filter(year == 20)
-
-ggplot(total_strats_dfr_y20, aes(total)) +
-  geom_histogram(bins = 20)
+## Use gamma to generate density by sim and year
+rng <- c(0.001, max(total_strat$total))
+x <- seq(rng[1], rng[2], length.out = 100)
+total_strat_den <- lapply(seq.int(nrow(total_strat)), function(i) {
+  data.frame(sim = total_strat$sim[i],
+             year = total_strat$year[i],
+             total = x,
+             den = dgamma(x, shape = total_strat$shape[i],
+                          scale = total_strat$scale[i]))
+}) |> dplyr::bind_rows()
 
 
-### Gamma prob. dist.
+### Density from bootstrapping
 
-## Overall
+setdet <- survey$setdet
 
-# Gamma estimators
-sigma = mean(total_strats_dfr_y20$sd * total_strats_dfr_y20$sampling_units)
-scale = mean((sigma ^ 2) / total_strats_dfr_y20$total)
-shape = mean(total_strats_dfr_y20$total / scale)
-
-# plot 1
-hist(as.numeric(total_strats_dfr_y20$total), probability = TRUE, breaks = 20,
-     main = "Dist. of Abundance (1000 sims) at Year 20", xlab = "Abundance")
-curve(dgamma(x, shape = shape, scale = scale), add = TRUE, col = "darkorange", lwd = 2)
-
-# plot 2
-qqplot(x = qgamma(ppoints(total_strats_dfr_y20$total),
-                  shape = shape, scale = scale),
-       y = total_strats_dfr_y20$total,
-       #xlim = c(0, 1986736283), ylim = c(0, 1986736283),
-       main = "QQ-Plot: Abundance (1000 sims), Gamma Distribution",
-       xlab = "Theoretical Quantiles, Gamma Distribution",
-       ylab = "Sample Quantiles, Abundance")
-abline(a = 0, b = 1, col = "dodgerblue", lwd = 2)
-grid()
-
-## Individual sims: Strata level
-
-total_strats_dfr_y20$sigma <- total_strats_dfr_y20$sampling_units * total_strats_dfr_y20$sd
-total_strats_dfr_y20$scale <- (total_strats_dfr_y20$sigma ^ 2) / total_strats_dfr_y20$total
-total_strats_dfr_y20$shape <- total_strats_dfr_y20$total / total_strats_dfr_y20$scale
-
-add_curve <- function(plot, i) {
-  return(plot + stat_function(aes(x=total_strats_dfr_y20$total[i], colour = "sim"), fun = dgamma,
-                              col=i, args = list(shape=total_strats_dfr_y20$shape[i], scale=total_strats_dfr_y20$scale[i])))
-}
-
-p1 <- ggplot(total_strats_dfr_y20, aes(x = total)) +
-  geom_density(aes(y=..density..),fill="grey",alpha=0.8)  +
-  xlim(0, 2e+09) +
-  theme_minimal()
-
-
-for (i in 1:1000){ # you can choose how many sims you want to use in the plot
-  p1 <- add_curve(p1, i)
-}
-
-p1
-
-
-### Bootstrapping
-
-setdets <- map(survey, function(x) {pluck(x, 'setdet')}) ### plucking only setdet element
-
-for( i in seq_along(setdets)){
-  setdets[[i]]$sim_number <- setdets[[i]]$sim + ((as.numeric(i) - 1) * 100)
-} ### Updating the simulation numbers
-
-for( i in seq_along(setdets)){
-  setdets[[i]] <- setdets[[i]][setdets[[i]]$year == 20,]
-} ### Subsetting only year 20
-
-setdet_sim <- NULL
-for( i in seq_along(setdets)){
-  setdet_sim[[i]] <- setdets[[i]] |> group_split(sim_number)
-} ### Splitting the sims for future map
-
-setdet_sim <- unlist(setdet_sim,recursive=FALSE)
-
+split_setdet <- split(setdet, paste0(setdet$year, "-", setdet$sim))
 
 sumYst <- function(data, i = seq_len(nrow(data))) {
   data[i, ] |>
@@ -177,46 +108,30 @@ sumYst <- function(data, i = seq_len(nrow(data))) {
 
 boot_one_year <- function(data, reps) {
   b <- boot::boot(data, statistic = sumYst, strata = data$strat, R = reps)
-  boot <- data.table (b$t) |> rename(estimate = V1) |> mutate(sim_number = mean(data$sim_number))
+  boot <- data.table(b$t) |> dplyr::rename(total = V1) |>
+    mutate(sim = mean(data$sim), year = mean(data$year))
   return(boot)
 }
 
 tic()
-boot_index <- furrr::future_map_dfr(setdet_sim, boot_one_year, reps=1000, .options = furrr::furrr_options(seed = TRUE))
+boot_index <- furrr::future_map_dfr(split_setdet, boot_one_year, reps = n_boot,
+                                    .options = furrr::furrr_options(seed = TRUE))
 toc()
 
-ggplot(boot_index, aes(x = estimates, group=sim_number))+
-  geom_density(aes(y=..density..),fill="grey95", alpha=0.9)+
-  ggtitle("Bootstrapped abundance distribution (1000 simulations)")+
-  theme_minimal()
 
-mean_boots <- boot_index |>
-  group_by(sim_number) |>
-  summarise(mean_boot = mean(estimates))
+sub_sims <- sample(seq.int(n_sims), 4)
+den_plot <- ggplot() +
+  geom_density_ridges(aes(x = total / 1e+08, y = as.numeric(year), group = factor(year)),
+                      color = "grey90", fill = "steelblue", alpha = 0.7,
+                      data = boot_index |> filter(sim %in% sub_sims)) +
+  geom_density_ridges(aes(x = total / 1e+08, y = year, height = den, group = factor(year)),
+                      stat = "identity", color = "grey90", fill = "red", alpha = 0.7,
+                      data = total_strat_den |> filter(sim %in% sub_sims)) +
+  coord_flip() + guides(fill = "none") +
+  ylab("Year") + xlab("Abundance index") +
+  facet_grid(rows = "sim") +
+  theme_nafo()
 
-plot_combine <- function(x) {
-  ggplot(boot_index |> filter (sim_number == x), aes(x = estimates))+
-    geom_density(aes(y=..density..),fill="grey95", alpha=0.9)+
-    geom_vline(xintercept = mean_boots[x,]$mean_boot, color = "black", size=1.5) +
-    xlim(0, 3e+09)+
-    stat_function(aes(x=total_strats_dfr_y20$total[x], colour = "sim"), fun = dgamma, col="darkorange",
-                  args = list(shape=total_strats_dfr_y20$shape[x], scale=total_strats_dfr_y20$scale[x]), size=2) +
-    geom_vline(xintercept = total_strats_dfr_y20$total[x], linetype="dashed", color = "darkorange", size=1.5) +
-    ggtitle("Single simulation - bootstrapped (grey area) and gamma distribution (orange line)") +
-    theme_minimal()+
-    theme(legend.position="bottom")
-}
+saveRDS(den_plot, file = "Gamma_SCR/data/den_plot.rds")
 
-plot_combine(5)
-ggsave("sim5.png", width = 8, height = 4)
 
-plot_combine(1)
-ggsave("sim1.png", width = 8, height = 4)
-
-plot_combine(15)
-ggsave("sim15.png", width = 8, height = 4)
-
-plot_combine(650)
-plot_combine(1000)
-plot_combine(88)
-plot_combine(431)
