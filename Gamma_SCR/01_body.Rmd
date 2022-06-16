@@ -1,23 +1,20 @@
 
 # Introduction
 
-Here is an Rmarkdown template for a NAFO SCR.
+TODO
 
 # Methods
 
-Describe methods.
+We simulated a redfish population with the R package SimSurvey (Regular et al., 2020). This simulation was based on the exponential decay cohort model. We set the mortality, recruitment, and growth parameters according to the observed parameters of 3NO redfish fall stocks. The simulated population dynamics were distributed through an area according to the age-year-space covariance in a parabolic relationship with depth. This survey area was 300 x 300 km with 10 km2 cell size and had 30 depth strata. We simulated stratified random sampling with a 2 m trawl for a distance of 1.5 km over 20 years. The number of sets in a stratum was proportional to its area (min 1/1000 km2) and the minimum set per stratum was 2. This stratified sampling was repeated 1000 times (hereafter, survey simulations).
+
+Design-based abundance indices were calculated by using the standard estimators for stratified random sampling for each survey simulation. We subset the design-based indices at the last year (Year 20) and calculated the gamma distribution estimators (scale and shape) for each simulation based on its mean and standard deviation over strata, as the following:
+
+TODO: equations
+<!-- scale=\frac{{(standard\ deviation\ast s a m p l i n g\ unit)}^2}{Total\ abundance\ estimation} -->
+<!-- shape=\frac{{Total\ abundance\ estimation}^2}{{(standard\ deviation\ast s a m p l i n g\ unit)}^2} -->
+
+We then applied non-parametric bootstrap to resample the observations (sets) independently within each stratum with replacement. The resampling and calculation of the mean bootstrap estimator were repeated 1000 times with the R package boot (Canty & Ripley, 2021). Therefore, each survey simulation had 1000 bootstrapped total abundance values for each year. 
 
 # Results
 
-Add results (figures, tables, etc.). For example, see Figure \@ref(fig:ssr) below:
-
-```{r ssr, fig.cap = "Relationshib between SSB and recruitment."}
-d <- data.frame(SSB = rlnorm(20), Recruitment = rlnorm(20))
-ggplot(d) +
-    geom_point(aes(x = SSB, y = Recruitment))
-```
-
-# Discussion
-
-Discuss!
-
+The Gamma probability density distribution showed high variability among survey simulations at Year 20 (Figure 1). The bootstrapped estimates of each survey simulation also showed a similar pattern with the gamma probability distribution at Year 20 (Figure 2). When looking at the distribution of individual survey simulations, the gamma distribution showed a wider but very close approximation to the bootstrapped estimates distribution (Figure 3). Further quantitative analysis is required to assess the performance of these methods for calculating the confidence intervals. 

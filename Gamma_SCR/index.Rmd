@@ -1,5 +1,5 @@
 ---
-title: "Approximating uncertainty around survey indices from stratified-random trawl surveys using the Gamma distribution"
+title: "Approximating uncertainty around indices from stratified-random trawl surveys using the Gamma distribution"
 author: "Paul M. Regular, Mariano Koen-Alonso, Semra Yalcin, Andrea M.J. Perreault, Laura J. Wheeland"
 date: | 
     Northwest Atlantic Fisheries Center, Fisheries and Oceans Canada, P.O.Box 5667, St. John’s, NL, A1C 5X1, Canada\       

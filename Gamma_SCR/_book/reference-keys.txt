@@ -1,8 +1,7 @@
-fig:ssr
 introduction
 methods
 results
-discussion
+figures
 app:appendix-a
 app:appendix-b
 colophon

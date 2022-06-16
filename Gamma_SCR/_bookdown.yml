@@ -1,5 +1,5 @@
 book_filename: "Gamma_SCR"
-rmd_files: ["index.Rmd", "01_body.Rmd", "02_references.Rmd", "03_appendix.Rmd", "99_colophon.Rmd"]
+rmd_files: ["index.Rmd", "01_body.Rmd", "02_references.Rmd", "03_figures.Rmd", "04_appendix.Rmd", "99_colophon.Rmd"]
 delete_merged_file: true
 language:
   label:
