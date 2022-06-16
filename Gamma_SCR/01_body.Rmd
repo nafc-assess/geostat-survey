@@ -7,14 +7,16 @@ TODO
 
 We simulated a redfish-like population with the R package SimSurvey [@regular2020]. The simulated population was based on the exponential decay cohort model where parameter settings for mortality, recruitment, and growth were based on assessments of redfish on the Grand Bank. The simulated population were distributed through an area according to the age-year-space covariance with a parabolic relationship with depth. This survey area was 300 x 300 km with 10 km^2^ cell size and had 30 depth-based strata. We simulated stratified random sampling with a 2 m wide trawl hauled for a distance of 1.5 km. The population and survey were simulated over 20 years. The number of sets in a stratum was proportional to its area (approximatly 1 set per 1000 km^2^) and the minimum set per stratum was 2. This survey was simulated 1000 times over the same population (hereafter, survey simulations).
 
-Focusing on samples obtained from the last year (Year 20) of each simulation, average trawlable abundance ($\hat{\mu}$) and sampling variance ($\hat{\sigma}^2$) was obtained using standard design-based estimators [@smith1981; @smith1990]. Quantiles from a Student’s t distribution are often used to approximate the uncertainty around stratified estimates; however, the lower limits of this approximation can result in negative values, which is unrealistic [@cadigan2011]. As an alternate approach, we apply the Gamma distribution by translating $\hat{\mu}$ and $\hat{\sigma}^2$ to shape ($\hat{\kappa}$) and scale ($\hat{\theta}$) parameters as follows:
-
-$$\hat{\kappa} = \frac{\hat{\mu}^2}{\hat{\sigma}^2}$$
+Focusing on samples obtained from the last year (Year 20) of each simulation, average trawlable abundance ($\hat{\mu}$) and sampling variance ($\hat{\sigma}^2$) was obtained using standard design-based estimators [@smith1981; @smith1990]. Quantiles from a Student’s t distribution are often used to approximate the uncertainty around stratified estimates; however, the lower limits of this approximation can result in negative values, which is unrealistic [@cadigan2011]. As an alternate approach, we apply the Gamma distribution by translating $\hat{\mu}$ and $\hat{\sigma}^2$ to scale ($\hat{\theta}$) and shape ($\hat{\kappa}$) parameters as follows:
 
 $$\hat{\theta} = \frac{\hat{\sigma}^2}{\hat{\mu}}$$
 
+$$\hat{\kappa} = \frac{\hat{\mu}^2}{\hat{\theta}}$$
+
+
+
 To compare densities obtained from the Gamma distribution with densities based on an empirical approach, we applied a non-parametric bootstrap to resample the observations (sets) independently within each stratum with replacement. The resampling and calculation of the mean bootstrap estimator were repeated 1000 times with the R package boot [@canty2021]. Therefore, each survey simulation had 1000 bootstrapped total abundance values for each year. 
 
-# Results
+# Results and Discussion
 
 The Gamma probability density distribution showed high variability among survey simulations at Year 20 (Figure 1). The bootstrapped estimates of each survey simulation also showed a similar pattern with the gamma probability distribution at Year 20 (Figure 2). When looking at the distribution of individual survey simulations, the gamma distribution showed a wider but very close approximation to the bootstrapped estimates distribution (Figure 3). Further quantitative analysis is required to assess the performance of these methods for calculating the confidence intervals. 
