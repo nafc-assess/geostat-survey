@@ -5,15 +5,15 @@ TODO
 
 # Methods
 
-We simulated a redfish population with the R package SimSurvey (Regular et al., 2020). This simulation was based on the exponential decay cohort model. We set the mortality, recruitment, and growth parameters according to the observed parameters of 3NO redfish fall stocks. The simulated population dynamics were distributed through an area according to the age-year-space covariance in a parabolic relationship with depth. This survey area was 300 x 300 km with 10 km2 cell size and had 30 depth strata. We simulated stratified random sampling with a 2 m trawl for a distance of 1.5 km over 20 years. The number of sets in a stratum was proportional to its area (min 1/1000 km2) and the minimum set per stratum was 2. This stratified sampling was repeated 1000 times (hereafter, survey simulations).
+We simulated a redfish-like population with the R package SimSurvey [@regular2020]. The simulated population was based on the exponential decay cohort model where parameter settings for mortality, recruitment, and growth were based on assessments of redfish on the Grand Bank. The simulated population were distributed through an area according to the age-year-space covariance with a parabolic relationship with depth. This survey area was 300 x 300 km with 10 km^2^ cell size and had 30 depth-based strata. We simulated stratified random sampling with a 2 m wide trawl hauled for a distance of 1.5 km. The population and survey were simulated over 20 years. The number of sets in a stratum was proportional to its area (approximatly 1 set per 1000 km^2^) and the minimum set per stratum was 2. This survey was simulated 1000 times over the same population (hereafter, survey simulations).
 
-Design-based abundance indices were calculated by using the standard estimators for stratified random sampling for each survey simulation. We subset the design-based indices at the last year (Year 20) and calculated the gamma distribution estimators (scale and shape) for each simulation based on its mean and standard deviation over strata, as the following:
+Focusing on samples obtained from the last year (Year 20) of each simulation, average trawlable abundance ($\hat{\mu}$) and sampling variance ($\hat{\sigma}^2$) was obtained using standard design-based estimators [@smith1981; @smith1990]. Quantiles from a Student’s t distribution are often used to approximate the uncertainty around stratified estimates; however, the lower limits of this approximation can result in negative values, which is unrealistic [@cadigan2011]. As an alternate approach, we apply the Gamma distribution by translating $\hat{\mu}$ and $\hat{\sigma}^2$ to shape ($\hat{\kappa}$) and scale ($\hat{\theta}$) parameters as follows:
 
-TODO: equations
-<!-- scale=\frac{{(standard\ deviation\ast s a m p l i n g\ unit)}^2}{Total\ abundance\ estimation} -->
-<!-- shape=\frac{{Total\ abundance\ estimation}^2}{{(standard\ deviation\ast s a m p l i n g\ unit)}^2} -->
+$$\hat{\kappa} = \frac{\hat{\mu}^2}{\hat{\sigma}^2}$$
 
-We then applied non-parametric bootstrap to resample the observations (sets) independently within each stratum with replacement. The resampling and calculation of the mean bootstrap estimator were repeated 1000 times with the R package boot (Canty & Ripley, 2021). Therefore, each survey simulation had 1000 bootstrapped total abundance values for each year. 
+$$\hat{\theta} = \frac{\hat{\sigma}^2}{\hat{\mu}}$$
+
+To compare densities obtained from the Gamma distribution with densities based on an empirical approach, we applied a non-parametric bootstrap to resample the observations (sets) independently within each stratum with replacement. The resampling and calculation of the mean bootstrap estimator were repeated 1000 times with the R package boot [@canty2021]. Therefore, each survey simulation had 1000 bootstrapped total abundance values for each year. 
 
 # Results
 
