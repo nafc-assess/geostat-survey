@@ -67,7 +67,7 @@ survey_fn <- function(n_sims) {
     run_strat()
 }
 
-nsims=replicate(10, 100, FALSE) ## each run is for 100 sims within it - 10 runs in total. Number of simulation can be increased here.
+nsims=replicate(50, 20, FALSE) ## each run is for 20 sims within 50 loops (1000 total).
 
 tic()
 survey <- furrr::future_map(nsims, survey_fn, .options = furrr::furrr_options(seed = TRUE, packages = "SimSurvey"))
