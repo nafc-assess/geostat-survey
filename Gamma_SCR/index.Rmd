@@ -39,5 +39,6 @@ showtext::showtext_opts(dpi = knitr::opts_chunk$get()$dpi) # force showtext dpi 
 library(NAFOdown)
 library(ggplot2)
 library(flextable)
+library(here)
 theme_set(theme_nafo()) # set default ggplot2 theme
 ```

@@ -1,19 +1,6 @@
 
 # Figures
 
-```{r gamma-den, fig.cap = "The gamma probability density distributions of 1000 survey simulations of a redfish population at Year 20. Each line shows the individual survey simulations."}
-
-
-```
-
-
-```{r boot-den, fig.cap = "The density distribution of relative abundance of bootstrapped estimates of 1000 survey distribution at Year 20. Each line shows the individual survey simulations."}
-
-
-```
-
-
-```{r comp-den, fig.cap = "The bootstrap and gamma distribution estimates for four survey simulations at Year 20. The red line shows the density distribution of estimated number of each bootstrapped abundance for an individual survey simulation. The blue line shows the gamma probability distribution of an individual survey simulation based on the mean and standard deviation of the design-based index."}
-
-
+```{r comp-den, fig.width = 7.5, fig.height = 8.5, fig.cap = "The bootstrap and gamma distributions estimated for five 20 year survey simulations. The red area shows the density distribution from 1000 bootstrapped samples from each year and survey replicate. The blue area shows the gamma probability distribution from each year and survey replicate based on the mean and standard deviation of the design-based index."}
+readRDS(here("Gamma_SCR/data/den_plot.rds"))
 ```

@@ -5,7 +5,16 @@ A primary objective of fisheries-independent trawl surveys is to obtain indices 
 
 # Methods
 
-We simulated a redfish-like population with the R package SimSurvey [@regular2020]. The simulated population was based on the exponential decay cohort model where parameter settings for mortality, recruitment, and growth were based on assessments of redfish on the Grand Bank. The simulated population were distributed through an area according to the age-year-space covariance with a parabolic relationship with depth. This survey area was 300 x 300 km with 10 km^2^ cell size and had 30 depth-based strata. We simulated stratified random sampling with a 2 m wide trawl hauled for a distance of 1.5 km. The population and survey were simulated over 20 years. The number of sets in a stratum was proportional to its area (approximately 1 set per 1000 km^2^) and the minimum set per stratum was 2. The survey simulation was replicated 50 times over the same population.
+Provided data from a stratified-random survey, average trawlable abundance or biomass ($\hat{\mu}$) and sampling variance ($\hat{\sigma}^2$) can be estimated using standard design-based formula [@cochran1977; @smith1981; @smith1990]. Instead of using a Student's t distribution to describe uncertainty and allow negative values, we apply the Gamma distribution by translating $\hat{\mu}$ and $\hat{\sigma}^2$ to scale ($\hat{\theta}$) and shape ($\hat{\kappa}$) parameters as follows:
+
+$$\hat{\theta} = \frac{\hat{\sigma}^2}{\hat{\mu}}, ~~ \text{and} ~~ \hat{\kappa} = \frac{\hat{\mu}^2}{\hat{\theta}}.$$
+
+Provided these values, density and quantile functions for the Gamma distribution can be used to calculate probabilities.For instance, the probability that the index increased from one year to the next can be quantified.
+
+
+## Simulation
+
+We simulated a redfish-like population using the R package SimSurvey [@regular2020]. The simulated population was based on the exponential decay cohort model where parameter settings for mortality, recruitment, and growth were based on assessments of redfish on the Grand Bank. The simulated population were distributed through an area according to the age-year-space covariance with a parabolic relationship with depth. This survey area was 300 x 300 km with 10 km^2^ cell size and had 30 depth-based strata. We simulated stratified random sampling with a 2 m wide trawl hauled for a distance of 1.5 km. The population and survey were simulated over 20 years. The number of sets in a stratum was proportional to its area (approximately 1 set per 1000 km^2^) and the minimum set per stratum was 2. The survey simulation was replicated 50 times over the same population.
 
 Average trawlable abundance ($\hat{\mu}$) and sampling variance ($\hat{\sigma}^2$) was calculated by year and replicate (20 years across 50 surveys) using standard design-based estimators [@smith1981; @smith1990]. Quantiles from a Student’s t distribution are often used to approximate the uncertainty around stratified estimates; however, the lower limits of this approximation can result in negative values, which is unrealistic [@cadigan2011]. As an alternate approach, we apply the Gamma distribution by translating $\hat{\mu}$ and $\hat{\sigma}^2$ to scale ($\hat{\theta}$) and shape ($\hat{\kappa}$) parameters as follows:
 
