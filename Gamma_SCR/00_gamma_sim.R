@@ -13,7 +13,7 @@ library(NAFOdown)
 
 plan(multisession, workers = floor(availableCores()/2))
 
-n_sims <- 50
+n_sims <- 5
 n_boot <- 1000
 
 set.seed(794)
@@ -76,7 +76,7 @@ total_strat <- survey$total_strat |>
          shape = total / scale)
 
 ## Use gamma to generate density by sim and year
-rng <- c(0.001, max(total_strat$total))
+rng <- c(0.001, max(total_strat$total) * 2)
 x <- seq(rng[1], rng[2], length.out = 100)
 total_strat_den <- lapply(seq.int(nrow(total_strat)), function(i) {
   data.frame(sim = total_strat$sim[i],
@@ -119,19 +119,22 @@ boot_index <- furrr::future_map_dfr(split_setdet, boot_one_year, reps = n_boot,
 toc()
 
 
-sub_sims <- sample(seq.int(n_sims), 4)
 den_plot <- ggplot() +
   geom_density_ridges(aes(x = total / 1e+08, y = as.numeric(year), group = factor(year)),
                       color = "grey90", fill = "steelblue", alpha = 0.7,
-                      data = boot_index |> filter(sim %in% sub_sims)) +
+                      data = boot_index, scale = 1) +
   geom_density_ridges(aes(x = total / 1e+08, y = year, height = den, group = factor(year)),
                       stat = "identity", color = "grey90", fill = "red", alpha = 0.7,
-                      data = total_strat_den |> filter(sim %in% sub_sims)) +
+                      data = total_strat_den, scale = -1) +
   coord_flip() + guides(fill = "none") +
   ylab("Year") + xlab("Abundance index") +
+  xlim(0, 40) +
   facet_grid(rows = "sim") +
   theme_nafo()
 
+saveRDS(total_strat, file = "Gamma_SCR/data/total_strat.rds")
+saveRDS(total_strat_den, file = "Gamma_SCR/data/total_strat_den.rds")
+saveRDS(boot_index, file = "Gamma_SCR/data/boot_index.rds")
 saveRDS(den_plot, file = "Gamma_SCR/data/den_plot.rds")
 
 
