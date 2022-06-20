@@ -9,7 +9,10 @@ Provided data from a stratified-random survey, average trawlable abundance or bi
 
 $$\hat{\theta} = \frac{\hat{\sigma}^2}{\hat{\mu}}, ~~ \text{and} ~~ \hat{\kappa} = \frac{\hat{\mu}^2}{\hat{\theta}}.$$
 
-Provided these values, density and quantile functions for the Gamma distribution can be used to calculate probabilities.For instance, the probability that the index increased from one year to the next can be quantified.
+Provided these values, density, quantile, and random functions for the Gamma distribution can be used to calculate probabilities. For instance, the probability that the index increased from one year to the next can be quantified. For some cases there might also be a need to calculate the probability that the current index is above or below an average level from a reference period, $\hat{\mu}_{r}$. If the reference period is based on the index, then the level cannot be perfectly known. To account for uncertainty around this reference, $\hat{\sigma}^2_{r}$, it is necessary to combine the variances across the indices. This is accomplished by averaging the means and summing equally weighted variances across a reference set of years $R$, 
+
+$$\hat{\mu}_{r} = \frac{\sum_{y = 1}^{|R|} \hat{\mu_y}}{n}, ~ \text{and} ~ \hat{\sigma}_r^2 = \frac{\sum_{y = 1}^{|R|} \hat{\sigma^2_y}}{2n}.$$
+This assumes that the estimates being averaged are independent. As above, $\hat{\mu}_{r}$ and $\hat{\sigma}^2_{r}$ can be converted to $\hat{\theta}}$ and $\hat{\kappa}}$ parameters to approximate uncertainty.
 
 
 ## Simulation
