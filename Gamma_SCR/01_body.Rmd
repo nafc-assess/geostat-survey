@@ -21,10 +21,25 @@ We simulated a redfish-like population using the R package SimSurvey [@regular20
 
 Average trawlable abundance ($\hat{\mu}$) and sampling variance ($\hat{\sigma}^2$) was calculated by year and replicate (20 years across 5 surveys) using standard design-based estimators [@smith1981; @smith1990] and these estimates were translated to scale ($\hat{\theta}$) and shape ($\hat{\kappa}$) parameters for the Gamma distribution as described above. To compare densities obtained from the Gamma distribution with densities based on an empirical approach, we applied a non-parametric bootstrap to resample the observations (sets) independently within each stratum with replacement. The resampling and calculation of the mean bootstrap estimator were repeated 1000 times with the R package boot [@canty2021]. Densities from these boostrap samples were computed for each year and survey replicate for comparison to the Gamma approximation.
 
-# Application
+This simulation can be replicated using code in [Appendix A](#app:appendix-a).
 
+## Application
 
+During the 2022 assessment of Redfish in NAFO division 3O, candidate biomass reference points were examined using indices derived from the Canadian spring and fall surveys of 3O. Given relative stability in catches through the history of the fishery, and trends in survey indices, the survey time series is considered to represent normal conditions for this stock (i.e. no apparent prolonged period of collapse). The average of the survey time series was therefore considered a reasonable proxy for B<sub>MSY</sub> [REF?] and, following the NAFO precautionary approach framework [@nafo2004], 30% of B<sub>MSY</sub> would be considered the limit reference point (LRP).
+
+To combine indices from the spring and fall surveys, and account for uncertainty associated with estimates from both surveys, annual stratified means and variances from each survey were integrated using the properties of the variance and translated to shape and scale parameters for use in the gamma distribution following the abovementioned equations. In years when a survey index is missing, the available survey is used in place of the mean and variance estimate. This same approach was applied to account for the uncertainty in the B<sub>MSY</sub> proxy by applying the gamma distribution informed by averaged point estimates of mean and variance.
 
 # Results and Discussion
 
-The Gamma probability density distribution showed high variability among survey simulations at Year 20 (Figure 1). The bootstrapped estimates of each survey simulation also showed a similar pattern with the gamma probability distribution at Year 20 (Figure 2). When looking at the distribution of individual survey simulations, the gamma distribution showed a wider but very close approximation to the bootstrapped estimates distribution (Figure 3). Further quantitative analysis is required to assess the performance of these methods for calculating the confidence intervals. 
+The Gamma probability density distribution showed high variability among survey simulations, as did the bootstrap samples (Figure \@ref(fig:comp-den). Nevertheless, the shape of both the Gamma density and the bootstrap samples were similar across all years and survey replicates, indicating that the Gamma distribution provides a reasonable approximation of the uncertainty around the stratified estimates. The similarity holds when survey indices are aggregated (Figure \@ref(fig:ref-den)). Though further quantitative analysis is required to assess the performance of these methods for calculating the confidence intervals, these results indicate that confidence intervals from the Gamma approach would be similar to those obtained using bootstrap samples. At the very least, confidence intervals from the Gamma distribution represents an improvement over the sometimes negative intervals derived from the t-distribution.
+
+The B<sub>MSY</sub> proxy and associated limit reference point (30% B<sub>MSY</sub> proxy) proposed for redfish was accepted as an interim reference point as was the Gamma-based method for quantifying uncertainty. Since this proxy is based on survey indices, it is not considered perfectly known. Estimates were therefore aggregated to account for this uncertainty. Determining status relative to the LRP considering uncertainty in both the proxy-BMSY and the current Biomass level provides was considered the most fulsome formulation of uncertainty in stock status and the most precautionary approach to advice.
+
+It is important to note, however, that survey indices can show unrealistic fluctuations year over year. This is apparent in both the simulations and across the refish indices. Large inter-annual fluctuations may be a consequence of sampling noise or distribution shifts. A single year may therefore be insufficient to indicate a true change in stock status.
+
+
+
+
+
+
+

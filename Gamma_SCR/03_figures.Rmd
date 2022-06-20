@@ -22,3 +22,5 @@ load(here("Gamma_SCR/data/red_plot.rda"))
 red_plot
 ```
 
+\pagebreak
+
