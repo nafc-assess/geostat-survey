@@ -2,6 +2,7 @@ fig:comp-den
 introduction
 methods
 simulation
+application
 results-and-discussion
 figures
 app:appendix-a
