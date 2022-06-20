@@ -1,4 +1,5 @@
 fig:comp-den
+fig:ref-den
 introduction
 methods
 simulation

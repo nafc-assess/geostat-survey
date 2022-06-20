@@ -1,5 +1,4 @@
 
-#############  Packages
 library(SimSurvey)
 library(tidyr)
 library(future)
@@ -15,6 +14,9 @@ plan(multisession, workers = floor(availableCores()/2))
 
 n_sims <- 5
 n_boot <- 1000
+
+
+## Simulation --------------------------------------------------------------------------------------
 
 set.seed(794)
 population <- sim_abundance(ages = 1:50,
@@ -68,7 +70,8 @@ survey <- sim_survey(population,
                      age_space_group = "division") |>
   run_strat()
 
-## Density from the Gamma distribution
+
+## Density from the Gamma distribution -------------------------------------------------------------
 
 total_strat <- survey$total_strat |>
   mutate(sigma = sampling_units * sd,
@@ -87,7 +90,7 @@ total_strat_den <- lapply(seq.int(nrow(total_strat)), function(i) {
 }) |> dplyr::bind_rows()
 
 
-### Density from bootstrapping
+### Density from bootstrapping ---------------------------------------------------------------------
 
 setdet <- survey$setdet
 
@@ -118,17 +121,19 @@ boot_index <- furrr::future_map_dfr(split_setdet, boot_one_year, reps = n_boot,
                                     .options = furrr::furrr_options(seed = TRUE))
 toc()
 
+quantile(boot_index$total, prob = c(0.001, 0.999))
 
 den_plot <- ggplot() +
-  geom_density_ridges(aes(x = total / 1e+08, y = as.numeric(year), group = factor(year)),
+  geom_density_ridges(aes(x = total, y = as.numeric(year), group = factor(year)),
                       color = "grey90", fill = "steelblue", alpha = 0.7,
                       data = boot_index, scale = 1) +
-  geom_density_ridges(aes(x = total / 1e+08, y = year, height = den, group = factor(year)),
+  geom_density_ridges(aes(x = total, y = year, height = den, group = factor(year)),
                       stat = "identity", color = "grey90", fill = "red", alpha = 0.7,
                       data = total_strat_den, scale = -1) +
   coord_flip() + guides(fill = "none") +
+  scale_x_continuous(labels = scales::label_number(suffix = "", scale = 1e-8),
+                     limits = c(194587641, 5116017391)) +
   ylab("Year") + xlab("Abundance index") +
-  xlim(0, 40) +
   facet_grid(rows = "sim") +
   theme_nafo()
 
@@ -136,5 +141,65 @@ saveRDS(total_strat, file = "Gamma_SCR/data/total_strat.rds")
 saveRDS(total_strat_den, file = "Gamma_SCR/data/total_strat_den.rds")
 saveRDS(boot_index, file = "Gamma_SCR/data/boot_index.rds")
 saveRDS(den_plot, file = "Gamma_SCR/data/den_plot.rds")
+
+
+## Relative status ---------------------------------------------------------------------------------
+
+total_strat <- readRDS("Gamma_SCR/data/total_strat.rds")
+total_strat_den <- readRDS("Gamma_SCR/data/total_strat_den.rds")
+boot_index <- readRDS("Gamma_SCR/data/boot_index.rds")
+
+sub_total_strat <- total_strat |>
+  filter(sim == 1)
+
+ref_est <- total_strat |>
+  filter(sim == 1, year %in% 2:9) |>
+  summarise(total = mean(total),
+            sigma = sqrt(mean(sigma ^ 2)), # sqrt(sum(sigma ^ 2) / (2 * n())),
+            scale = sigma ^ 2 / total,
+            shape = total / scale)
+
+ref_boot <- boot_index |>
+  filter(sim == 1, year %in% 2:9)
+
+x <- seq(min(ref_boot), max(ref_boot), length.out = 100)
+ref_den <- data.frame(total = x, den = dgamma(x, shape = ref_est$shape, scale = ref_est$scale))
+
+t_est <- total_strat |>
+  filter(sim == 1, year == 20)
+
+t_den <- total_strat_den |>
+  filter(sim == 1, year == 20)
+
+t_boot <- boot_index |>
+  filter(sim == 1, year == 20)
+
+boot_prob <- mean((t_boot$total - ref_boot$total) < 0)
+n_samp <- 100000
+ref_samp <- rgamma(n_samp, shape = ref_est$shape, scale = ref_est$scale)
+t_samp <- rgamma(n_samp, shape = t_est$shape, scale = t_est$scale)
+gamma_prob <- mean((t_samp - ref_samp) < 0)
+
+ref_plot <- ggplot() +
+  geom_density(aes(x = total), data = ref_boot, fill = "steelblue", color = "steelblue", alpha = 0.5) +
+  geom_area(aes(x = total, y = -den), data = ref_den, fill = "red", color = "red", alpha = 0.5) +
+  geom_density(aes(x = total), data = t_boot, fill = NA, color = "steelblue", size = .nafo_lwd) +
+  geom_area(aes(x = total, y = -den), data = t_den, fill = NA, color = "red", size = .nafo_lwd) +
+  geom_text(aes(x = t_est$total, y = max(ref_den$den) * 1.2, label = "Terminal estimate"), hjust = 0, vjust = 0.5) +
+  geom_text(aes(x = ref_est$total, y = max(ref_den$den) * 1.2, label = "Reference point"), hjust = 0, vjust = 1) +
+  geom_text(aes(x = t_est$total, y = 0, label = round(boot_prob, 2)), hjust = -0.5, color = "steelblue") +
+  geom_text(aes(x = t_est$total, y = 0, label = round(gamma_prob, 2)), hjust = 1.5, color = "red") +
+  theme_nafo() +
+  coord_flip() +
+  scale_x_continuous(labels = scales::label_number(suffix = "", scale = 1e-8)) +
+  ylab("") + xlab("Abundance index") +
+  theme(axis.ticks.x = element_blank(),
+        axis.text.x = element_blank())
+
+save(ref_plot, t_est, ref_est, ref_den, boot_prob, gamma_prob, file = "Gamma_SCR/data/ref_plot.rda")
+
+
+
+
 
 
