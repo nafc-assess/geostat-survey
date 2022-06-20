@@ -15,3 +15,10 @@ ref_plot
 ```
 
 \pagebreak
+
+
+```{r red, fig.width = .nafo_width, fig.height = .nafo_height * 2, fig.cap = "Combined CAN-Spring and CAN-Autumn biomass index (top; blue line) with 80% confidence intervals (blue shaded area) calculated using a Gamma distribution. Horizontal line (red) indicates interim Blim = 0.3 Bmsy-proxy with 80% confidence intervals (red dashed lines). Probability of By < Blim is presented below."}
+load(here("Gamma_SCR/data/red_plot.rda"))
+red_plot
+```
+
