@@ -43,7 +43,7 @@ totals <- totals |>
 bmsy_proxy <- mean(totals$mean_total)
 bmsy_proxy_units <- mean(totals$mean_units)
 bmsy_proxy_df <- mean(totals$mean_df)
-bmsy_proxy_var <- mean(totals$mean_var)
+bmsy_proxy_var <- sum(totals$mean_var) / (2 * length(totals$mean_var))
 bmsy_proxy_sigma <- (bmsy_proxy_units * sqrt(bmsy_proxy_var))
 bmsy_proxy_scale <- (bmsy_proxy_sigma ^ 2) / bmsy_proxy # gamma dist parameter theta
 bmsy_proxy_shape <- bmsy_proxy / bmsy_proxy_scale       # gamma dist parameter k
@@ -83,7 +83,7 @@ hist <- plot_ly() |>
 subplot(trend, hist, nrows = 1, widths = c(0.8, 0.2), shareY = TRUE, titleY = TRUE) |>
   hide_guides()
 
-## Simulate biomass index for each year | mean and variance estimates to apprximate CI
+## Simulate biomass index for each year | mean and variance estimates to approximate CI
 sim_totals <- lapply(seq.int(nrow(totals)), function(i) {
   data.frame(year = totals$year[i], sim_total = rgamma(n_sim, shape = totals$mean_shape[i],
                                                        scale = totals$mean_scale[i]))
@@ -177,7 +177,5 @@ p2 <- ggplot() +
 red_plot <- cowplot::plot_grid(p1, p2, nrow = 2, rel_heights = c(0.6, 0.3), align = "v")
 
 save(red_plot, totals, bmsy_proxy, gamma_res, file = "Gamma_SCR/data/red_plot.rda")
-
-
 
 

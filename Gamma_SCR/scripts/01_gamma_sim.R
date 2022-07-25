@@ -13,7 +13,7 @@ library(NAFOdown)
 plan(multisession, workers = floor(availableCores()/2))
 
 n_sims <- 5
-n_boot <- 1000
+n_boot <- 5000
 
 
 ## Simulation --------------------------------------------------------------------------------------
@@ -112,7 +112,7 @@ sumYst <- function(data, i = seq_len(nrow(data))) {
 boot_one_year <- function(data, reps) {
   b <- boot::boot(data, statistic = sumYst, strata = data$strat, R = reps)
   boot <- data.table(b$t) |> dplyr::rename(total = V1) |>
-    mutate(sim = mean(data$sim), year = mean(data$year))
+    mutate(samp = seq.int(reps), sim = mean(data$sim), year = mean(data$year))
   return(boot)
 }
 
@@ -155,14 +155,17 @@ sub_total_strat <- total_strat |>
 ref_est <- total_strat |>
   filter(sim == 1, year %in% 2:9) |>
   summarise(total = mean(total),
-            sigma = sqrt(mean(sigma ^ 2)), # sqrt(sum(sigma ^ 2) / (2 * n())),
+            sigma = sqrt(sum(sigma ^ 2) / (2 * n())),
             scale = sigma ^ 2 / total,
             shape = total / scale)
 
 ref_boot <- boot_index |>
-  filter(sim == 1, year %in% 2:9)
+  filter(sim == 1, year %in% 2:9) |>
+  group_by(samp) |>
+  summarise(total = mean(total)) |>
+  ungroup()
 
-x <- seq(min(ref_boot), max(ref_boot), length.out = 100)
+x <- seq(min(boot_index$total), max(boot_index$total), length.out = 100)
 ref_den <- data.frame(total = x, den = dgamma(x, shape = ref_est$shape, scale = ref_est$scale))
 
 t_est <- total_strat |>
@@ -187,8 +190,8 @@ ref_plot <- ggplot() +
   geom_area(aes(x = total, y = -den), data = t_den, fill = NA, color = "red", size = .nafo_lwd) +
   geom_text(aes(x = t_est$total, y = max(ref_den$den) * 1.2, label = "Terminal estimate"), hjust = 0, vjust = 0.5) +
   geom_text(aes(x = ref_est$total, y = max(ref_den$den) * 1.2, label = "Reference point"), hjust = 0, vjust = 1) +
-  geom_text(aes(x = t_est$total, y = 0, label = round(boot_prob, 2)), hjust = -0.5, color = "steelblue") +
-  geom_text(aes(x = t_est$total, y = 0, label = round(gamma_prob, 2)), hjust = 1.5, color = "red") +
+  geom_text(aes(x = t_est$total, y = 0, label = round(boot_prob, 3)), hjust = -0.5, color = "steelblue") +
+  geom_text(aes(x = t_est$total, y = 0, label = round(gamma_prob, 3)), hjust = 1.5, color = "red") +
   theme_nafo() +
   coord_flip() +
   scale_x_continuous(labels = scales::label_number(suffix = "", scale = 1e-8)) +
