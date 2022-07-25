@@ -29,7 +29,7 @@ fall_totals <- RF_fall$strat2$biomass$summary[, c("survey.year", "total", "var",
 names(fall_totals) <- c("year", "fall_total", "fall_var", "fall_units", "fall_df")
 totals <- merge(spring_totals, fall_totals, by = "year", all = TRUE)
 totals$mean_total <- rowMeans(totals[, c("spring_total", "fall_total")], na.rm = TRUE)
-totals$mean_var <- rowMeans(totals[, c("spring_var", "fall_var")], na.rm = TRUE)
+totals$mean_var <- rowSums(totals[, c("spring_var", "fall_var")], na.rm = TRUE) / (2 ^ 2)
 totals$mean_units <- rowMeans(totals[, c("spring_units", "fall_units")], na.rm = TRUE)
 totals$mean_df <- rowMeans(totals[, c("spring_df", "fall_df")], na.rm = TRUE)
 
@@ -43,7 +43,7 @@ totals <- totals |>
 bmsy_proxy <- mean(totals$mean_total)
 bmsy_proxy_units <- mean(totals$mean_units)
 bmsy_proxy_df <- mean(totals$mean_df)
-bmsy_proxy_var <- sum(totals$mean_var) / (2 * length(totals$mean_var))
+bmsy_proxy_var <- sum(totals$mean_var) / (length(totals$mean_var) ^ 2)
 bmsy_proxy_sigma <- (bmsy_proxy_units * sqrt(bmsy_proxy_var))
 bmsy_proxy_scale <- (bmsy_proxy_sigma ^ 2) / bmsy_proxy # gamma dist parameter theta
 bmsy_proxy_shape <- bmsy_proxy / bmsy_proxy_scale       # gamma dist parameter k
@@ -178,4 +178,4 @@ red_plot <- cowplot::plot_grid(p1, p2, nrow = 2, rel_heights = c(0.6, 0.3), alig
 
 save(red_plot, totals, bmsy_proxy, gamma_res, file = "Gamma_SCR/data/red_plot.rda")
 
-
+write.csv(totals, file = "Gamma_SCR/data/red_vals.csv", row.names = FALSE)

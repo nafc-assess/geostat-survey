@@ -96,8 +96,8 @@ setdet <- survey$setdet
 
 split_setdet <- split(setdet, paste0(setdet$year, "-", setdet$sim))
 
-sumYst <- function(data, i = seq_len(nrow(data))) {
-  data[i, ] |>
+sumYst <- function(data, i = seq_len(nrow(data)), return_mean = FALSE) {
+  x <- data[i, ] |>
     ### stratum level
     group_by(year, strat, strat_area) |>
     summarise(meanYh = mean(n), tow_area = mean(tow_area), .groups = "drop_last") |>
@@ -107,6 +107,7 @@ sumYst <- function(data, i = seq_len(nrow(data))) {
     ### year level
     summarise(sumYst= mean(N) * sum(WhmeanYh), .groups = "drop_last") |>
     pull(sumYst)
+  if (return_mean) { return(mean(x)) } else { return(x) }
 }
 
 boot_one_year <- function(data, reps) {
@@ -155,17 +156,20 @@ sub_total_strat <- total_strat |>
 ref_est <- total_strat |>
   filter(sim == 1, year %in% 2:9) |>
   summarise(total = mean(total),
-            sigma = sqrt(sum(sigma ^ 2) / (2 * n())),
+            sigma = sqrt(sum(sigma ^ 2) / (n() ^ 2)),
             scale = sigma ^ 2 / total,
             shape = total / scale)
 
-ref_boot <- boot_index |>
+ref_setdet <- survey$setdet |>
   filter(sim == 1, year %in% 2:9) |>
-  group_by(samp) |>
-  summarise(total = mean(total)) |>
-  ungroup()
+  mutate(year_strat = (year * 1000) + strat)
 
-x <- seq(min(boot_index$total), max(boot_index$total), length.out = 100)
+ref_boot_obj <- boot::boot(ref_setdet, statistic = sumYst,
+                           strata = ref_setdet$year_strat, R = n_boot,
+                           return_mean = TRUE)
+ref_boot <- data.table(ref_boot_obj$t) |> dplyr::rename(total = V1)
+
+x <- seq(min(ref_boot$total), max(ref_boot$total), length.out = 100)
 ref_den <- data.frame(total = x, den = dgamma(x, shape = ref_est$shape, scale = ref_est$scale))
 
 t_est <- total_strat |>
