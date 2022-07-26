@@ -166,7 +166,7 @@ split_ref_setdet <- split(ref_setdet, paste0(ref_setdet$sim))
 ref_boot_fn <- function(data, R) {
   b <- boot::boot(data, statistic = sumYst, strata = data$year_strat, R = n_boot, return_mean = TRUE)
   ref_boot <- data.table(b$t) |> dplyr::rename(total = V1) |>
-    mutate(samp = seq.int(R), sim = mean(data$sim), year = mean(data$year))}
+    mutate(samp = seq.int(R), sim = mean(data$sim))}
 
 ref_boot <- furrr::future_map_dfr(split_ref_setdet, ref_boot_fn, R = n_boot, .options = furrr::furrr_options(seed = TRUE))
 
