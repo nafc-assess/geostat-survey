@@ -117,10 +117,8 @@ boot_one_year <- function(data, reps) {
   return(boot)
 }
 
-tic()
 boot_index <- furrr::future_map_dfr(split_setdet, boot_one_year, reps = n_boot,
                                     .options = furrr::furrr_options(seed = TRUE))
-toc()
 
 quantile(boot_index$total, prob = c(0.001, 0.999))
 
@@ -150,52 +148,98 @@ total_strat <- readRDS("Gamma_SCR/data/total_strat.rds")
 total_strat_den <- readRDS("Gamma_SCR/data/total_strat_den.rds")
 boot_index <- readRDS("Gamma_SCR/data/boot_index.rds")
 
-sub_total_strat <- total_strat |>
-  filter(sim == 1)
-
+### Gamma estimates for the reference years
 ref_est <- total_strat |>
-  filter(sim == 1, year %in% 2:9) |>
+  filter(year %in% 2:9) |>
+  group_by(sim) |>
   summarise(total = mean(total),
-            sigma = sqrt(sum(sigma ^ 2) / (n() ^ 2)),
+            sigma = sqrt(sum(sigma ^ 2) / (n()^2)),
             scale = sigma ^ 2 / total,
             shape = total / scale)
 
+### Bootstrapping for the reference years
 ref_setdet <- survey$setdet |>
-  filter(sim == 1, year %in% 2:9) |>
+  filter(year %in% 2:9) |>
   mutate(year_strat = (year * 1000) + strat)
+split_ref_setdet <- split(ref_setdet, paste0(ref_setdet$sim))
 
-ref_boot_obj <- boot::boot(ref_setdet, statistic = sumYst,
-                           strata = ref_setdet$year_strat, R = n_boot,
-                           return_mean = TRUE)
-ref_boot <- data.table(ref_boot_obj$t) |> dplyr::rename(total = V1)
+ref_boot_fn <- function(data, R) {
+  b <- boot::boot(data, statistic = sumYst, strata = data$year_strat, R = n_boot, return_mean = TRUE)
+  ref_boot <- data.table(b$t) |> dplyr::rename(total = V1) |>
+    mutate(samp = seq.int(R), sim = mean(data$sim))}
 
-x <- seq(min(ref_boot$total), max(ref_boot$total), length.out = 100)
-ref_den <- data.frame(total = x, den = dgamma(x, shape = ref_est$shape, scale = ref_est$scale))
+ref_boot <- furrr::future_map_dfr(split_ref_setdet, ref_boot_fn, R = n_boot, .options = furrr::furrr_options(seed = TRUE))
 
+saveRDS(ref_boot, file = "Gamma_SCR/data/ref_boot.rds")
+
+### Sampling for the gamma distribution
+x <- ref_boot |>
+  group_by(sim) |>
+  summarise(seq = seq(min(total), max(total), length.out = 100))
+
+ref_den <- NULL
+for(i in unique(ref_est$sim)) {
+  ref_den[[i]] <- x |>
+    filter(sim == i) |>
+    summarise(total= seq, den = dgamma(seq, shape = ref_est$shape[i],scale = ref_est$scale[i]))
+}
+ref_den <- Reduce('rbind', ref_den)
+
+### Final year results
 t_est <- total_strat |>
-  filter(sim == 1, year == 20)
+  filter(year == 20)
 
 t_den <- total_strat_den |>
-  filter(sim == 1, year == 20)
+  filter(year == 20)
 
 t_boot <- boot_index |>
-  filter(sim == 1, year == 20)
+  filter(year == 20)
 
-boot_prob <- mean((t_boot$total - ref_boot$total) < 0)
+### Calculating the probability for the final year
+
+boot_prob <- bind_rows(t_boot, ref_boot, .id = 'id') %>%
+  group_by(sim) %>%
+  summarise(boot_prob = mean((total[id == 1] - total[id == 2]) < 0), .groups = 'drop')
+
 n_samp <- 100000
-ref_samp <- rgamma(n_samp, shape = ref_est$shape, scale = ref_est$scale)
-t_samp <- rgamma(n_samp, shape = t_est$shape, scale = t_est$scale)
-gamma_prob <- mean((t_samp - ref_samp) < 0)
+
+ref_samp <- map_df(1:nrow(ref_est),function(i){
+  dat <- rgamma(n_samp, shape = ref_est$shape[i], scale = ref_est$scale[i])
+  data.table(sim=i, sample=dat)
+})
+
+t_samp <- map_df(1:nrow(t_est),function(i){
+  dat <- rgamma(n_samp, shape = t_est$shape[i], scale = t_est$scale[i])
+  data.table(sim=i, sample=dat)
+})
+
+gamma_prob <- bind_rows(t_samp, ref_samp, .id = 'id') %>%
+  group_by(sim) %>%
+  summarise(gamma_prob = mean((sample[id == 1] - sample[id == 2]) < 0), .groups = 'drop')
+
+### Plot
+text_terminate <- cbind(ref_den |>
+                          group_by(sim) |>
+                          summarise(max_den = max(ref_den$den)* 1.2),
+                        total_x = t_est$total)
+
+text_reference <- cbind(ref_den |>
+                          group_by(sim) |>
+                          summarise(max_den = max(ref_den$den)* 1.2),
+                        total_x = ref_est$total)
+
+prob_text <- cbind(t_est, boot_prob = boot_prob$boot_prob, gamma_prob = gamma_prob$gamma_prob)
 
 ref_plot <- ggplot() +
   geom_density(aes(x = total), data = ref_boot, fill = "steelblue", color = "steelblue", alpha = 0.5) +
+  facet_grid(~sim)+
   geom_area(aes(x = total, y = -den), data = ref_den, fill = "red", color = "red", alpha = 0.5) +
   geom_density(aes(x = total), data = t_boot, fill = NA, color = "steelblue", size = .nafo_lwd) +
   geom_area(aes(x = total, y = -den), data = t_den, fill = NA, color = "red", size = .nafo_lwd) +
-  geom_text(aes(x = t_est$total, y = max(ref_den$den) * 1.2, label = "Terminal estimate"), hjust = 0, vjust = 0.5) +
-  geom_text(aes(x = ref_est$total, y = max(ref_den$den) * 1.2, label = "Reference point"), hjust = 0, vjust = 1) +
-  geom_text(aes(x = t_est$total, y = 0, label = round(boot_prob, 3)), hjust = -0.5, color = "steelblue") +
-  geom_text(aes(x = t_est$total, y = 0, label = round(gamma_prob, 3)), hjust = 1.5, color = "red") +
+  #geom_text(data = text_terminate, aes(x = total_x, y = max_den, label = "Terminal estimate"), hjust = 0, vjust = 0.5, inherit.aes=FALSE) +
+  #geom_text(data = text_reference, aes(x = total_x, y = max_den, label = "Reference point"), hjust = 0, vjust = 1) +
+  geom_text(data = prob_text, aes(x = total, y = 0, label = round(boot_prob, 3)), hjust = -0.5, color = "steelblue") +
+  geom_text(data = prob_text, aes(x = total, y = 0, label = round(gamma_prob, 3)), hjust = 1.25, color = "red") +
   theme_nafo() +
   coord_flip() +
   scale_x_continuous(labels = scales::label_number(suffix = "", scale = 1e-8)) +
@@ -203,10 +247,115 @@ ref_plot <- ggplot() +
   theme(axis.ticks.x = element_blank(),
         axis.text.x = element_blank())
 
-save(ref_plot, t_est, ref_est, ref_den, boot_prob, gamma_prob, file = "Gamma_SCR/data/ref_plot.rda")
+ref_plot
 
+save(ref_plot, t_est, ref_est, ref_den, ref_boot, boot_prob, gamma_prob, file = "Gamma_SCR/data/ref_plot.rda")
 
+## Comparison CI plots --------------------------------------------------------------------------------------
+library(ggpubr)
+library(patchwork)
 
+gamma_ci = total_strat |>
+  group_by(year,sim) |>
+  mutate(lower95 = qgamma(0.025, shape = shape, scale = scale),
+         upper95 = qgamma(0.975, shape = shape, scale = scale))|>
+  distinct(lower95,upper95) |>
+  rename(lower95_gamma=lower95,upper95_gamma=upper95)
 
+boot_ci = boot_index |>
+  group_by(year,sim) |>
+  mutate(lower95 = quantile(total, prob = c(0.025)),
+         upper95=quantile(total, prob = c(0.975))) |>
+  distinct(lower95,upper95) |>
+  rename(lower95_boot=lower95,upper95_boot=upper95)
 
+all_ci = merge(gamma_ci, boot_ci)
 
+## plots of gamma vs bootstrap lower and upper CI estimates for all simulations
+lb_comp = ggplot(all_ci, aes(x=lower95_gamma, y = lower95_boot))+
+  geom_point()+
+  geom_abline(slope=1, linetype=2)+
+  theme_nafo()+
+  stat_regline_equation(aes(label = ..rr.label..),size=3)+
+  labs(x="Gamma lower 95% bound",y="Bootstrapped lower 95% bound")
+lb_comp
+
+ub_comp = ggplot(all_ci, aes(x=upper95_gamma, y = upper95_boot))+
+  geom_point()+
+  geom_abline(slope=1, linetype=2)+
+  theme_nafo()+
+  stat_regline_equation(aes(label = ..rr.label..),size=3)+
+  labs(x="Gamma upper 95% bound",y="Bootstrapped upper 95% bound")
+
+ub_comp
+
+all_comp = lb_comp/ub_comp
+
+all_comp
+
+## plots of gamma vs bootstrap lower and upper CI estimates separated by sim
+lb_comp_sim = ggplot(all_ci, aes(x=lower95_gamma, y = lower95_boot))+
+  geom_point()+
+  geom_abline(slope=1, linetype=2)+
+  facet_grid(~sim)+
+  theme_nafo()+
+  stat_regline_equation(aes(label = ..rr.label..),size=3)+
+  labs(x="Gamma lower 95% bound",y="Bootstrapped lower 95% bound")
+lb_comp_sim
+
+ub_comp_sim = ggplot(all_ci, aes(x=upper95_gamma, y = upper95_boot))+
+  geom_point()+
+  geom_abline(slope=1, linetype=2)+
+  facet_grid(~sim)+
+  theme_nafo()+
+  stat_regline_equation(aes(label = ..rr.label..),size=3)+
+  labs(x="Gamma upper 95% bound",y="Bootstrapped upper 95% bound")
+
+ub_comp_sim
+
+all_comp_sim = lb_comp_sim/ub_comp_sim
+
+all_comp_sim
+
+## plot CIs for each sim/year for all methods
+total_gamma <- merge(gamma_ci, total_strat, by=c("sim", "year"))
+total_boot<- merge(boot_ci, total_strat, by=c("sim", "year"))
+
+gamma_plot = data.frame(year = total_gamma$year, sim = total_gamma$sim,
+                        total = total_gamma$total, lower95 = total_gamma$lower95_gamma,
+                        upper95 = total_gamma$upper95_gamma, method = "Gamma")
+
+boot_plot = data.frame(year = total_boot$year, sim = total_boot$sim,
+                       total = total_boot$total, lower95 = total_boot$lower95_boot,
+                       upper95 = total_boot$upper95_boot, method = "Bootstrap")
+
+studentt_plot = data.frame(year = total_gamma$year, sim = total_gamma$sim,
+                           total = total_gamma$total, lower95 = total_gamma$total_lcl,
+                           upper95 = total_gamma$total_ucl, method = "Student")
+
+all_plot = rbind.data.frame(gamma_plot, boot_plot, studentt_plot)
+
+## compare only gamma and boot
+ci_plot_gam_bt = ggplot(all_plot |> filter(method!="Student"), aes(x=year , y = total, color = method))+
+  geom_point(size = 1.5)+
+  facet_grid(.~sim)+
+  labs(x = "Year", y = "Abundance index")+
+  geom_errorbar(aes(ymin = lower95 , ymax = upper95), size = 1, alpha = 0.5)+
+  # geom_hline(yintercept = 0, linetype=2)+
+  theme_nafo()
+ci_plot_gam_bt
+
+## compare gamma, boot and student's t
+ci_plot_gam_bt_st = ggplot(all_plot , aes(x=year , y = total, color = method))+
+  geom_point(size = 1.5)+
+  facet_grid(.~sim)+
+  labs(x = "Year", y = "Abundance index")+
+  geom_errorbar(aes(ymin = lower95 , ymax = upper95), size = 1, alpha = 0.5)+
+  geom_hline(yintercept = 0, linetype=2)+
+  theme_nafo()
+
+ci_plot_gam_bt_st
+
+save(lb_comp, ub_comp, all_comp,
+     lb_comp_sim, ub_comp_sim, all_comp_sim,
+     ci_plot_gam_bt, ci_plot_gam_bt_st, file = "Gamma_SCR/data/ci_comp_plot.rda")
