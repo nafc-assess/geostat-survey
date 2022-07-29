@@ -29,7 +29,7 @@ knitr::opts_chunk$set(
   # cache = TRUE,
   cache.comments = FALSE,
   dev = "png",
-  dpi = 300
+  dpi = 600
 )
 showtext::showtext_opts(dpi = knitr::opts_chunk$get()$dpi) # force showtext dpi to match chunk dpi to preserve proper font size (9 pt)
 ```

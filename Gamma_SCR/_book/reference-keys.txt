@@ -1,11 +1,13 @@
+eq:gamma
+eq:mean
 fig:comp-den
 fig:ref-den
-fig:red
 abstract
 introduction
 methods
-simulation
-application
+calculating-gamma-parameters
+aggregating-estimates
+simulation-testing
 results-and-discussion
 figures
 app:appendix-a
