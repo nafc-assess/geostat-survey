@@ -219,6 +219,8 @@ gamma_prob <- bind_rows(t_samp, ref_samp, .id = 'id') %>%
   group_by(sim) %>%
   summarise(gamma_prob = mean((sample[id == 1] - sample[id == 2]) < 0), .groups = 'drop')
 
+all.equal(gamma_prob$gamma_prob, boot_prob$boot_prob)
+
 ### Plot
 text_terminate <- cbind(ref_den |>
                           group_by(sim) |>

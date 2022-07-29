@@ -1,6 +1,7 @@
 eq:gamma
 eq:mean
 fig:comp-den
+fig:comp-ci
 fig:ref-den
 abstract
 introduction
