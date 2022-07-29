@@ -257,64 +257,64 @@ ref_plot
 save(ref_plot, t_est, ref_est, ref_den, ref_boot, boot_prob, gamma_prob, file = "Gamma_SCR/data/ref_plot.rda")
 
 ## Comparison CI plots --------------------------------------------------------------------------------------
+
 library(ggpubr)
 library(patchwork)
 
-gamma_ci = total_strat |>
+gamma_ci <- total_strat |>
   group_by(year,sim) |>
   mutate(lower95 = qgamma(0.025, shape = shape, scale = scale),
          upper95 = qgamma(0.975, shape = shape, scale = scale))|>
   distinct(lower95,upper95) |>
-  rename(lower95_gamma=lower95,upper95_gamma=upper95)
+  rename(lower95_gamma = lower95,upper95_gamma = upper95)
 
-boot_ci = boot_index |>
+boot_ci <- boot_index |>
   group_by(year,sim) |>
   mutate(lower95 = quantile(total, prob = c(0.025)),
-         upper95=quantile(total, prob = c(0.975))) |>
-  distinct(lower95,upper95) |>
-  rename(lower95_boot=lower95,upper95_boot=upper95)
+         upper95 = quantile(total, prob = c(0.975))) |>
+  distinct(lower95, upper95) |>
+  rename(lower95_boot = lower95, upper95_boot = upper95)
 
-all_ci = merge(gamma_ci, boot_ci)
+all_ci <- merge(gamma_ci, boot_ci)
 
 ## plots of gamma vs bootstrap lower and upper CI estimates for all simulations
-lb_comp = ggplot(all_ci, aes(x=lower95_gamma, y = lower95_boot))+
-  geom_point()+
-  geom_abline(slope=1, linetype=2)+
-  theme_nafo()+
-  stat_regline_equation(aes(label = ..rr.label..),size=3)+
+lb_comp <- ggplot(all_ci, aes(x = lower95_gamma, y = lower95_boot)) +
+  geom_point() +
+  geom_abline(slope = 1, linetype = 2) +
+  theme_nafo() +
+  stat_regline_equation(aes(label = ..rr.label..), size = 3) +
   labs(x="Gamma lower 95% bound",y="Bootstrapped lower 95% bound")
 lb_comp
 
-ub_comp = ggplot(all_ci, aes(x=upper95_gamma, y = upper95_boot))+
-  geom_point()+
-  geom_abline(slope=1, linetype=2)+
-  theme_nafo()+
-  stat_regline_equation(aes(label = ..rr.label..),size=3)+
-  labs(x="Gamma upper 95% bound",y="Bootstrapped upper 95% bound")
-
+ub_comp <- ggplot(all_ci, aes(x = upper95_gamma, y = upper95_boot)) +
+  geom_point() +
+  geom_abline(slope = 1, linetype = 2) +
+  theme_nafo() +
+  stat_regline_equation(aes(label = ..rr.label..), size = 3)+
+  labs(x = "Gamma upper 95% bound", y = "Bootstrapped upper 95% bound")
 ub_comp
 
-all_comp = lb_comp/ub_comp
+all_comp <- lb_comp / ub_comp
 
 all_comp
 
 ## plots of gamma vs bootstrap lower and upper CI estimates separated by sim
-lb_comp_sim = ggplot(all_ci, aes(x=lower95_gamma, y = lower95_boot))+
+lb_comp_sim <- ggplot(all_ci, aes(x=lower95_gamma, y = lower95_boot))+
   geom_point()+
-  geom_abline(slope=1, linetype=2)+
-  facet_grid(~sim)+
+  geom_abline(slope = 1, linetype = 2)+
+  facet_grid(~ sim)+
   theme_nafo()+
-  stat_regline_equation(aes(label = ..rr.label..),size=3)+
-  labs(x="Gamma lower 95% bound",y="Bootstrapped lower 95% bound")
+  stat_regline_equation(aes(label = ..rr.label..), size = 3)+
+  labs(x = "Gamma lower 95% bound", y = "Bootstrapped lower 95% bound")
 lb_comp_sim
 
-ub_comp_sim = ggplot(all_ci, aes(x=upper95_gamma, y = upper95_boot))+
+ub_comp_sim <- ggplot(all_ci, aes(x = upper95_gamma, y = upper95_boot))+
   geom_point()+
-  geom_abline(slope=1, linetype=2)+
-  facet_grid(~sim)+
+  geom_abline(slope = 1, linetype = 2)+
+  facet_grid(~ sim)+
   theme_nafo()+
-  stat_regline_equation(aes(label = ..rr.label..),size=3)+
-  labs(x="Gamma upper 95% bound",y="Bootstrapped upper 95% bound")
+  stat_regline_equation(aes(label = ..rr.label..), size = 3)+
+  labs(x = "Gamma upper 95% bound", y = "Bootstrapped upper 95% bound")
 
 ub_comp_sim
 
@@ -323,27 +323,28 @@ all_comp_sim = lb_comp_sim/ub_comp_sim
 all_comp_sim
 
 ## plot CIs for each sim/year for all methods
-total_gamma <- merge(gamma_ci, total_strat, by=c("sim", "year"))
-total_boot<- merge(boot_ci, total_strat, by=c("sim", "year"))
 
-gamma_plot = data.frame(year = total_gamma$year, sim = total_gamma$sim,
-                        total = total_gamma$total, lower95 = total_gamma$lower95_gamma,
-                        upper95 = total_gamma$upper95_gamma, method = "Gamma")
+total_gamma <- merge(gamma_ci, total_strat, by = c("sim", "year"))
+total_boot<- merge(boot_ci, total_strat, by = c("sim", "year"))
 
-boot_plot = data.frame(year = total_boot$year, sim = total_boot$sim,
-                       total = total_boot$total, lower95 = total_boot$lower95_boot,
-                       upper95 = total_boot$upper95_boot, method = "Bootstrap")
+gamma_plot <- data.frame(year = total_gamma$year, sim = total_gamma$sim,
+                         total = total_gamma$total, lower95 = total_gamma$lower95_gamma,
+                         upper95 = total_gamma$upper95_gamma, method = "Gamma")
 
-studentt_plot = data.frame(year = total_gamma$year, sim = total_gamma$sim,
+boot_plot <- data.frame(year = total_boot$year, sim = total_boot$sim,
+                        total = total_boot$total, lower95 = total_boot$lower95_boot,
+                        upper95 = total_boot$upper95_boot, method = "Bootstrap")
+
+studentt_plot <- data.frame(year = total_gamma$year, sim = total_gamma$sim,
                            total = total_gamma$total, lower95 = total_gamma$total_lcl,
                            upper95 = total_gamma$total_ucl, method = "Student")
 
-all_plot = rbind.data.frame(gamma_plot, boot_plot, studentt_plot)
+all_plot <- rbind.data.frame(gamma_plot, boot_plot, studentt_plot)
 
 ## compare only gamma and boot
-ci_plot_gam_bt = ggplot(all_plot |> filter(method!="Student"), aes(x=year , y = total, color = method))+
+ci_plot_gam_bt <- ggplot(all_plot |> filter(method!="Student"), aes(x=year , y = total, color = method))+
   geom_point(size = 1.5)+
-  facet_grid(.~sim)+
+  facet_grid(. ~sim)+
   labs(x = "Year", y = "Abundance index")+
   geom_errorbar(aes(ymin = lower95 , ymax = upper95), size = 1, alpha = 0.5)+
   # geom_hline(yintercept = 0, linetype=2)+
@@ -351,16 +352,69 @@ ci_plot_gam_bt = ggplot(all_plot |> filter(method!="Student"), aes(x=year , y = 
 ci_plot_gam_bt
 
 ## compare gamma, boot and student's t
-ci_plot_gam_bt_st = ggplot(all_plot , aes(x=year , y = total, color = method))+
+ci_plot_gam_bt_st <- ggplot(all_plot , aes(x=year , y = total, color = method))+
   geom_point(size = 1.5)+
   facet_grid(.~sim)+
   labs(x = "Year", y = "Abundance index")+
   geom_errorbar(aes(ymin = lower95 , ymax = upper95), size = 1, alpha = 0.5)+
   geom_hline(yintercept = 0, linetype=2)+
   theme_nafo()
-
 ci_plot_gam_bt_st
+
+all_plot_wide <- all_plot |>
+  pivot_wider(values_from = c(lower95, upper95), names_from = method,
+              id_cols = c(year, sim))
+
+lb_comp2 <- ggplot(all_plot_wide, aes(x = lower95_Gamma, y = lower95_Bootstrap, color = factor(sim))) +
+  geom_point(size = .nafo_pts) +
+  geom_abline(slope = 1, linetype = 2, size = .nafo_lwd) +
+  theme_nafo() +
+  stat_regline_equation(aes(label = ..rr.label.., color = NULL), size = 3) +
+  scale_color_brewer(palette = "Set1", name = "Simulation") +
+  scale_x_continuous(labels = scales::label_number(suffix = "", scale = 1e-8)) +
+  scale_y_continuous(labels = scales::label_number(suffix = "", scale = 1e-8)) +
+  labs(x = "Gamma lower 95% bound", y = "Bootstrapped lower 95% bound") +
+  theme(legend.position = "none")
+
+ub_comp2 <- ggplot(all_plot_wide, aes(x = upper95_Gamma, y = upper95_Bootstrap, color = factor(sim))) +
+  geom_point(size = .nafo_pts) +
+  geom_abline(slope = 1, linetype = 2, size = .nafo_lwd) +
+  theme_nafo() +
+  stat_regline_equation(aes(label = ..rr.label.., color = NULL), size = 3) +
+  scale_color_brewer(palette = "Set1", name = "Simulation") +
+  scale_x_continuous(labels = scales::label_number(suffix = "", scale = 1e-8)) +
+  scale_y_continuous(labels = scales::label_number(suffix = "", scale = 1e-8)) +
+  labs(x = "Gamma upper 95% bound", y = "Bootstrapped upper 95% bound") +
+  theme(legend.position = "none")
+
+lb_comp3 <- ggplot(all_plot_wide, aes(x = lower95_Student, y = lower95_Bootstrap, color = factor(sim))) +
+  geom_point(size = .nafo_pts) +
+  geom_abline(slope = 1, linetype = 2, size = .nafo_lwd) +
+  theme_nafo() +
+  stat_regline_equation(aes(label = ..rr.label.., color = NULL), size = 3) +
+  scale_color_brewer(palette = "Set1", name = "Simulation") +
+  scale_x_continuous(labels = scales::label_number(suffix = "", scale = 1e-8)) +
+  scale_y_continuous(labels = scales::label_number(suffix = "", scale = 1e-8)) +
+  labs(x = "Student's t lower 95% bound", y = "Bootstrapped lower 95% bound") +
+  theme(legend.position = "right",
+        legend.box.background = element_blank())
+
+ub_comp3 <- ggplot(all_plot_wide, aes(x = upper95_Student, y = upper95_Bootstrap, color = factor(sim))) +
+  geom_point(size = .nafo_pts) +
+  geom_abline(slope = 1, linetype = 2, size = .nafo_lwd) +
+  theme_nafo() +
+  stat_regline_equation(aes(label = ..rr.label.., color = NULL), size = 3) +
+  scale_color_brewer(palette = "Set1", name = "Simulation") +
+  scale_x_continuous(labels = scales::label_number(suffix = "", scale = 1e-8)) +
+  scale_y_continuous(labels = scales::label_number(suffix = "", scale = 1e-8)) +
+  labs(x = "Student's t upper 95% bound", y = "Bootstrapped upper 95% bound") +
+  theme(legend.position = "none")
+
+all_comp2 <- (lb_comp2 | lb_comp3) / (ub_comp2 | ub_comp3)
+all_comp2
 
 save(lb_comp, ub_comp, all_comp,
      lb_comp_sim, ub_comp_sim, all_comp_sim,
-     ci_plot_gam_bt, ci_plot_gam_bt_st, file = "Gamma_SCR/data/ci_comp_plot.rda")
+     ci_plot_gam_bt, ci_plot_gam_bt_st,
+     all_comp2,
+     file = "Gamma_SCR/data/ci_comp_plot.rda")
