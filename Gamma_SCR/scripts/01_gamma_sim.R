@@ -150,7 +150,7 @@ boot_index <- readRDS("Gamma_SCR/data/boot_index.rds")
 
 ### Gamma estimates for the reference years
 ref_est <- total_strat |>
-  filter(year %in% 2:9) |>
+  filter(year %in% 10:15) |>
   group_by(sim) |>
   summarise(total = mean(total),
             sigma = sqrt(sum(sigma ^ 2) / (n()^2)),
@@ -159,7 +159,7 @@ ref_est <- total_strat |>
 
 ### Bootstrapping for the reference years
 ref_setdet <- survey$setdet |>
-  filter(year %in% 2:9) |>
+  filter(year %in% 10:15) |>
   mutate(year_strat = (year * 1000) + strat)
 split_ref_setdet <- split(ref_setdet, paste0(ref_setdet$sim))
 
@@ -171,6 +171,8 @@ ref_boot_fn <- function(data, R) {
 ref_boot <- furrr::future_map_dfr(split_ref_setdet, ref_boot_fn, R = n_boot, .options = furrr::furrr_options(seed = TRUE))
 
 saveRDS(ref_boot, file = "Gamma_SCR/data/ref_boot.rds")
+
+ref_boot <- readRDS("Gamma_SCR/data/ref_boot.rds")
 
 ### Sampling for the gamma distribution
 x <- ref_boot |>
@@ -238,11 +240,14 @@ ref_plot <- ggplot() +
   geom_area(aes(x = total, y = -den), data = t_den, fill = NA, color = "red", size = .nafo_lwd) +
   #geom_text(data = text_terminate, aes(x = total_x, y = max_den, label = "Terminal estimate"), hjust = 0, vjust = 0.5, inherit.aes=FALSE) +
   #geom_text(data = text_reference, aes(x = total_x, y = max_den, label = "Reference point"), hjust = 0, vjust = 1) +
-  geom_text(data = prob_text, aes(x = total, y = 0, label = round(boot_prob, 3)), hjust = -0.5, color = "steelblue") +
-  geom_text(data = prob_text, aes(x = total, y = 0, label = round(gamma_prob, 3)), hjust = 1.25, color = "red") +
+  geom_text(data = prob_text, aes(x = total, y = 0, label = round(boot_prob, 2)),
+            hjust = -0.2, vjust = 2, color = "steelblue") +
+  geom_text(data = prob_text, aes(x = total, y = 0, label = round(gamma_prob, 2)),
+            hjust = 1.2, vjust = 2, color = "red") +
   theme_nafo() +
   coord_flip() +
-  scale_x_continuous(labels = scales::label_number(suffix = "", scale = 1e-8)) +
+  scale_x_continuous(labels = scales::label_number(suffix = "", scale = 1e-8),
+                     limits = c(0, quantile(ref_boot$total, 0.9999))) +
   ylab("") + xlab("Abundance index") +
   theme(axis.ticks.x = element_blank(),
         axis.text.x = element_blank())
