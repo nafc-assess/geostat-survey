@@ -39,4 +39,3 @@ boot_wrapper <- function(data, reps) {
 }
 
 
-
