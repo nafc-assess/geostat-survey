@@ -98,27 +98,27 @@ sdm_newdata_cod <- sdm_newdata_fn(survey_cod[[1]], sdm_data_cod[[1]]) ### since 
 
 ### IID + NB2
 sdm_NB2_IID_index_cod <- furrr::future_map2_dfr(sdm_data_cod, mesh_sdm_cod,
-                                                       formula = formula1, range_gt = 125, sigma_lt = 12.5, type = "NB", scenario = "Base",
+                                                       formula = formula1, range_gt = 75, sigma_lt = 7.5, type = "NB", scenario = "Base",
                                                        species = "Cod-like", newdata = sdm_newdata_cod, model_run_NB, .id = "model", .progress = TRUE)
 ### IID + NB2 + depth
 sdm_NB2_IID_depth_index_cod <- furrr::future_map2_dfr(sdm_data_cod, mesh_sdm_cod,
-                                                             formula = formula2, range_gt = 125, sigma_lt = 12.5, type = "NB + Depth", scenario = "Base",
+                                                             formula = formula2, range_gt = 75, sigma_lt = 7.5, type = "NB + Depth", scenario = "Base",
                                                              species = "Cod-like", newdata = sdm_newdata_cod, model_run_NB, .id = "model", .progress = TRUE)
 ### IID + TW
 sdm_TW_IID_index_cod <- furrr::future_map2_dfr(sdm_data_cod, mesh_sdm_cod,
-                                                      formula = formula1, range_gt = 125, sigma_lt = 12.5, type = "TW", scenario = "Base",
+                                                      formula = formula1, range_gt = 75, sigma_lt = 7.5, type = "TW", scenario = "Base",
                                                       species = "Cod-like", newdata = sdm_newdata_cod, model_run_TW, .id = "model", .progress = TRUE)
 ### IID + TW + depth
 sdm_TW_IID_depth_index_cod <- furrr::future_map2_dfr(sdm_data_cod, mesh_sdm_cod,
-                                                            formula = formula2, range_gt = 125, sigma_lt = 12.5, type = "TW + Depth", scenario = "Base",
+                                                            formula = formula2, range_gt = 75, sigma_lt = 7.5, type = "TW + Depth", scenario = "Base",
                                                             species = "Cod-like", newdata = sdm_newdata_cod, model_run_TW, .id = "model", .progress = TRUE)
 ### IID + DG
 sdm_DG_IID_index_cod <- furrr::future_map2_dfr(sdm_data_cod, mesh_sdm_cod,
-                                                      formula = formula1, range_gt = 125, sigma_lt = 12.5, type = "DG", scenario = "Base",
+                                                      formula = formula1, range_gt = 75, sigma_lt = 7.5, type = "DG", scenario = "Base",
                                                       species = "Cod-like", newdata = sdm_newdata_cod, model_run_DG, .id = "model", .progress = TRUE)
 #### IID + DG + depth
 sdm_DG_IID_depth_index_cod <- furrr::future_map2_dfr(sdm_data_cod, mesh_sdm_cod,
-                                                            formula = list(formula1, formula2), range_gt = 125, sigma_lt = 12.5, type = "DG + Depth", scenario = "Base",
+                                                            formula = list(formula1, formula2), range_gt = 75, sigma_lt = 7.5, type = "DG + Depth", scenario = "Base",
                                                             species = "Cod-like", newdata = sdm_newdata_cod, model_run_DG, .id = "model", .progress = TRUE)
 #############                           #############
 
@@ -187,27 +187,27 @@ mesh_sdm_cod_r30  <- furrr::future_map(sdm_data_cod_r30, mesh_sdm_fn, .options =
 
 ### IID + NB2
 sdm_NB2_IID_index_cod_r30 <- furrr::future_map2_dfr(sdm_data_cod_r30, mesh_sdm_cod_r30,
-                                                       formula = formula1, range_gt = 125, sigma_lt = 12.5, type = "NB", scenario = "30% set reduction",
+                                                       formula = formula1, range_gt = 75, sigma_lt = 7.5, type = "NB", scenario = "30% set reduction",
                                                        species = "Cod-like", newdata = sdm_newdata_cod, model_run_NB, .id = "model", .progress = TRUE)
 ### IID + NB2 + depth
 sdm_NB2_IID_depth_index_cod_r30 <- furrr::future_map2_dfr(sdm_data_cod_r30, mesh_sdm_cod_r30,
-                                                             formula = formula2, range_gt = 125, sigma_lt = 12.5, type = "NB + Depth", scenario = "30% set reduction",
+                                                             formula = formula2, range_gt = 75, sigma_lt = 7.5, type = "NB + Depth", scenario = "30% set reduction",
                                                              species = "Cod-like", newdata = sdm_newdata_cod, model_run_NB, .id = "model", .progress = TRUE)
 ### IID + TW
 sdm_TW_IID_index_cod_r30 <- furrr::future_map2_dfr(sdm_data_cod_r30, mesh_sdm_cod_r30,
-                                                      formula = formula1, range_gt = 125, sigma_lt = 12.5, type = "TW", scenario = "30% set reduction",
+                                                      formula = formula1, range_gt = 75, sigma_lt = 7.5, type = "TW", scenario = "30% set reduction",
                                                       species = "Cod-like", newdata = sdm_newdata_cod, model_run_TW, .id = "model", .progress = TRUE)
 ### IID + TW + depth
 sdm_TW_IID_depth_index_cod_r30 <- furrr::future_map2_dfr(sdm_data_cod_r30, mesh_sdm_cod_r30,
-                                                            formula = formula2, range_gt = 125, sigma_lt = 12.5, type = "TW + Depth", scenario = "30% set reduction",
+                                                            formula = formula2, range_gt = 75, sigma_lt = 7.5, type = "TW + Depth", scenario = "30% set reduction",
                                                             species = "Cod-like", newdata = sdm_newdata_cod, model_run_TW, .id = "model", .progress = TRUE)
 ### IID + DG
 sdm_DG_IID_index_cod_r30 <- furrr::future_map2_dfr(sdm_data_cod_r30, mesh_sdm_cod_r30,
-                                                      formula = formula1, range_gt = 125, sigma_lt = 12.5, type = "DG", scenario = "30% set reduction",
+                                                      formula = formula1, range_gt = 75, sigma_lt = 7.5, type = "DG", scenario = "30% set reduction",
                                                       species = "Cod-like", newdata = sdm_newdata_cod, model_run_DG, .id = "model", .progress = TRUE)
 #### IID + DG + depth
 sdm_DG_IID_depth_index_cod_r30 <- furrr::future_map2_dfr(sdm_data_cod_r30, mesh_sdm_cod_r30,
-                                                            formula = list(formula1, formula2), range_gt = 125, sigma_lt = 12.5, type = "DG + Depth", scenario = "30% set reduction",
+                                                            formula = list(formula1, formula2), range_gt = 75, sigma_lt = 7.5, type = "DG + Depth", scenario = "30% set reduction",
                                                             species = "Cod-like", newdata = sdm_newdata_cod, model_run_DG, .id = "model", .progress = TRUE)
 
 #############                           #############
@@ -368,27 +368,27 @@ mesh_sdm_cod_b30  <- furrr::future_map(sdm_data_cod_b30, mesh_sdm_fn, .options =
 
 ### IID + NB2
 sdm_NB2_IID_index_cod_b30 <- furrr::future_map2_dfr(sdm_data_cod_b30, mesh_sdm_cod_b30,
-                                                       formula = formula1, range_gt = 125, sigma_lt = 12.5, type = "NB", scenario = "30% area blocked",
+                                                       formula = formula1, range_gt = 75, sigma_lt = 7.5, type = "NB", scenario = "30% area blocked",
                                                        species = "Cod-like", newdata = sdm_newdata_cod, model_run_NB, .id = "model", .progress = TRUE)
 ### IID + NB2 + depth
 sdm_NB2_IID_depth_index_cod_b30 <- furrr::future_map2_dfr(sdm_data_cod_b30, mesh_sdm_cod_b30,
-                                                             formula = formula2, range_gt = 125, sigma_lt = 12.5, type = "NB + Depth", scenario = "30% area blocked",
+                                                             formula = formula2, range_gt = 75, sigma_lt = 7.5, type = "NB + Depth", scenario = "30% area blocked",
                                                              species = "Cod-like", newdata = sdm_newdata_cod, model_run_NB, .id = "model", .progress = TRUE)
 ### IID + TW
 sdm_TW_IID_index_cod_b30 <- furrr::future_map2_dfr(sdm_data_cod_b30, mesh_sdm_cod_b30,
-                                                      formula = formula1, range_gt = 125, sigma_lt = 12.5, type = "TW", scenario = "30% area blocked",
+                                                      formula = formula1, range_gt = 75, sigma_lt = 7.5, type = "TW", scenario = "30% area blocked",
                                                       species = "Cod-like", newdata = sdm_newdata_cod, model_run_TW, .id = "model", .progress = TRUE)
 ### IID + TW + depth
 sdm_TW_IID_depth_index_cod_b30 <- furrr::future_map2_dfr(sdm_data_cod_b30, mesh_sdm_cod_b30,
-                                                            formula = formula2, range_gt = 125, sigma_lt = 12.5, type = "TW + Depth", scenario = "30% area blocked",
+                                                            formula = formula2, range_gt = 75, sigma_lt = 7.5, type = "TW + Depth", scenario = "30% area blocked",
                                                             species = "Cod-like", newdata = sdm_newdata_cod, model_run_TW, .id = "model", .progress = TRUE)
 ### IID + DG
 sdm_DG_IID_index_cod_b30 <- furrr::future_map2_dfr(sdm_data_cod_b30, mesh_sdm_cod_b30,
-                                                      formula = formula1, range_gt = 125, sigma_lt = 12.5, type = "DG", scenario = "30% area blocked",
+                                                      formula = formula1, range_gt = 75, sigma_lt = 7.5, type = "DG", scenario = "30% area blocked",
                                                       species = "Cod-like", newdata = sdm_newdata_cod, model_run_DG, .id = "model", .progress = TRUE)
 #### IID + DG + depth
 sdm_DG_IID_depth_index_cod_b30 <- furrr::future_map2_dfr(sdm_data_cod_b30, mesh_sdm_cod_b30,
-                                                            formula = list(formula1, formula2), range_gt = 125, sigma_lt = 12.5, type = "DG + Depth", scenario = "30% area blocked",
+                                                            formula = list(formula1, formula2), range_gt = 75, sigma_lt = 7.5, type = "DG + Depth", scenario = "30% area blocked",
                                                             species = "Cod-like", newdata = sdm_newdata_cod, model_run_DG, .id = "model", .progress = TRUE)
 
 #############               #############
@@ -462,32 +462,32 @@ mesh_sdm_cod_SR  <- furrr::future_map(sdm_data_cod_SR, mesh_sdm_fn, .options = f
 
 ### IID + NB2
 sdm_NB2_IID_index_cod_SR  <- furrr::future_map2_dfr(sdm_data_cod_SR, mesh_sdm_cod_SR,
-                                                       formula = formula1, range_gt = 125, sigma_lt = 12.5, type = "NB", scenario = "Strata removal",
+                                                       formula = formula1, range_gt = 75, sigma_lt = 7.5, type = "NB", scenario = "Strata removal",
                                                        species = "Cod-like", newdata = sdm_newdata_cod, model_run_NB, .id = "model", .progress = TRUE)
 
 ### IID + NB2 + depth
 sdm_NB2_IID_depth_index_cod_SR  <- furrr::future_map2_dfr(sdm_data_cod_SR, mesh_sdm_cod_SR,
-                                                             formula = formula2, range_gt = 125, sigma_lt = 12.5, type = "NB + Depth", scenario = "Strata removal",
+                                                             formula = formula2, range_gt = 75, sigma_lt = 7.5, type = "NB + Depth", scenario = "Strata removal",
                                                              species = "Cod-like", newdata = sdm_newdata_cod, model_run_NB, .id = "model", .progress = TRUE)
 ### IID + TW
 sdm_TW_IID_index_cod_SR  <- furrr::future_map2_dfr(sdm_data_cod_SR, mesh_sdm_cod_SR,
-                                                      formula = formula1, range_gt = 125, sigma_lt = 12.5, type = "TW", scenario = "Strata removal",
+                                                      formula = formula1, range_gt = 75, sigma_lt = 7.5, type = "TW", scenario = "Strata removal",
                                                       species = "Cod-like", newdata = sdm_newdata_cod, model_run_TW, .id = "model", .progress = TRUE)
 ### IID + TW + depth
 
 sdm_TW_IID_depth_index_cod_SR  <- furrr::future_map2_dfr(sdm_data_cod_SR, mesh_sdm_cod_SR,
-                                                            formula = formula2, range_gt = 125, sigma_lt = 12.5, type = "TW + Depth", scenario = "Strata removal",
+                                                            formula = formula2, range_gt = 75, sigma_lt = 7.5, type = "TW + Depth", scenario = "Strata removal",
                                                             species = "Cod-like", newdata = sdm_newdata_cod, model_run_TW, .id = "model", .progress = TRUE)
 ### IID + DG
 
 sdm_DG_IID_index_cod_SR <- furrr::future_map2_dfr(sdm_data_cod_SR, mesh_sdm_cod_SR,
-                                                      formula = formula1, range_gt = 125, sigma_lt = 12.5, type = "DG", scenario = "Strata removal",
+                                                      formula = formula1, range_gt = 75, sigma_lt = 7.5, type = "DG", scenario = "Strata removal",
                                                       species = "Cod-like", newdata = sdm_newdata_cod, model_run_DG, .id = "model", .progress = TRUE)
 
 #### IID + DG + depth
 
 sdm_DG_IID_depth_index_cod_SR <- furrr::future_map2_dfr(sdm_data_cod_SR, mesh_sdm_cod_SR,
-                                                            formula = list(formula1, formula2), range_gt = 125, sigma_lt = 12.5, type = "DG + Depth", scenario = "Strata removal",
+                                                            formula = list(formula1, formula2), range_gt = 75, sigma_lt = 7.5, type = "DG + Depth", scenario = "Strata removal",
                                                             species = "Cod-like", newdata = sdm_newdata_cod, model_run_DG, .id = "model", .progress = TRUE)
 
 #############                           #############
