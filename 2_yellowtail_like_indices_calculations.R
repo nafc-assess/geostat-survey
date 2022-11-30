@@ -463,7 +463,6 @@ mesh_sdm_yellowtail_SR  <- furrr::future_map(sdm_data_yellowtail_SR, mesh_sdm_fn
 sdm_NB2_IID_index_yellowtail_SR  <- furrr::future_map2_dfr(sdm_data_yellowtail_SR, mesh_sdm_yellowtail_SR,
                                                        formula = formula1, range_gt = 125, sigma_lt = 12.5, type = "NB", scenario = "Strata removal",
                                                        species = "Yellowtail-like", newdata = sdm_newdata_yellowtail, model_run_NB, .id = "model", .progress = TRUE)
-
 ### IID + NB2 + depth
 sdm_NB2_IID_depth_index_yellowtail_SR  <- furrr::future_map2_dfr(sdm_data_yellowtail_SR, mesh_sdm_yellowtail_SR,
                                                              formula = formula2, range_gt = 125, sigma_lt = 12.5, type = "NB + Depth", scenario = "Strata removal",
@@ -473,18 +472,15 @@ sdm_TW_IID_index_yellowtail_SR  <- furrr::future_map2_dfr(sdm_data_yellowtail_SR
                                                       formula = formula1, range_gt = 125, sigma_lt = 12.5, type = "TW", scenario = "Strata removal",
                                                       species = "Yellowtail-like", newdata = sdm_newdata_yellowtail, model_run_TW, .id = "model", .progress = TRUE)
 ### IID + TW + depth
-
 sdm_TW_IID_depth_index_yellowtail_SR  <- furrr::future_map2_dfr(sdm_data_yellowtail_SR, mesh_sdm_yellowtail_SR,
                                                             formula = formula2, range_gt = 125, sigma_lt = 12.5, type = "TW + Depth", scenario = "Strata removal",
                                                             species = "Yellowtail-like", newdata = sdm_newdata_yellowtail, model_run_TW, .id = "model", .progress = TRUE)
 ### IID + DG
-
 sdm_DG_IID_index_yellowtail_SR <- furrr::future_map2_dfr(sdm_data_yellowtail_SR, mesh_sdm_yellowtail_SR,
                                                       formula = formula1, range_gt = 125, sigma_lt = 12.5, type = "DG", scenario = "Strata removal",
                                                       species = "Yellowtail-like", newdata = sdm_newdata_yellowtail, model_run_DG, .id = "model", .progress = TRUE)
 
 #### IID + DG + depth
-
 sdm_DG_IID_depth_index_yellowtail_SR <- furrr::future_map2_dfr(sdm_data_yellowtail_SR, mesh_sdm_yellowtail_SR,
                                                             formula = list(formula1, formula2), range_gt = 125, sigma_lt = 12.5, type = "DG + Depth", scenario = "Strata removal",
                                                             species = "Yellowtail-like", newdata = sdm_newdata_yellowtail, model_run_DG, .id = "model", .progress = TRUE)
@@ -499,4 +495,3 @@ index_yellowtail_all_scenarios <- do.call(bind_rows, mget(ls(pattern = "index"))
 index_yellowtail_all_scenarios <- merge(index_yellowtail_all_scenarios, true_yellowtail, by=c("pop", "year", "species"))
 
 save(index_yellowtail_all_scenarios, file = "./Data/index_yellowtail_all_scenarios.Rdata")
-
