@@ -297,6 +297,8 @@ block_poly_sf_30 <- block_poly_sf_fn(grid_sf, 0.3, grid_sf_buffered_perc30)
 
 st_crs(grid_sf) = st_crs(block_poly_sf_30)
 
+#save(block_poly_sf_30, file = "./Data/block_poly_sf_30.Rdata")
+
 ################# Blocking the setdets
 
 setdet_cod <- map(survey_cod, function(x) {pluck(x, 'setdet')})
@@ -423,7 +425,6 @@ for(i in seq_along(survey_SR)){
   survey_SR[[i]]$setdet <- combined_samples_10[[i]]}
 
 setdet_cod_SR <- map(survey_SR, function(x) {pluck(x, 'setdet')})
-
 for(i in seq_along(setdet_cod_SR)){
   setdet_cod_SR[[i]]$pop <- as.numeric(i)
 }
