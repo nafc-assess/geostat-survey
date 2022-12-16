@@ -312,8 +312,7 @@ a <- CI_coverage |>
                                "NB + Depth" =  "#B2DF8A",
                                "TW" = "#E31A1C",
                                "TW + Depth" = "#FB9A99"))+
-  labs(x = "", y = "Ratio of CI covered", colour = "Estimator", fill = "Estimator")+
-  labs(y = "Ratio of CI covered") +
+  labs(x = "", y = "Confidence interval coverage", colour = "Estimator", fill = "Estimator")+
   labs(title = "a) Cod-like") +
   coord_cartesian(ylim = c(0,1), expand = FALSE) +
   theme_bw() +
@@ -338,8 +337,7 @@ b <- CI_coverage |>
                                "NB + Depth" =  "#B2DF8A",
                                "TW" = "#E31A1C",
                                "TW + Depth" = "#FB9A99"))+
-  labs(x = "", y = "Ratio of CI covered", colour = "Estimator", fill = "Estimator")+
-  labs(y = "Ratio of CI covered") +
+  labs(x = "", y = "Confidence interval coverage", colour = "Estimator", fill = "Estimator")+
   labs(title = "b) Yellowtail-like") +
   coord_cartesian(ylim = c(0,1), expand = FALSE) +
   theme_bw() +
