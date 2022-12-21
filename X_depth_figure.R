@@ -39,7 +39,7 @@ depth_effect <- data.frame(depth = c(depth, depth),
 
 (parabola <- ggplot(data = depth_effect) +
   geom_path(aes(x = exp(effect), y = depth, color = species), size = 1) +
-  scale_y_reverse() +
+  scale_y_reverse(expand = c(0, 0)) +
   scale_color_brewer(palette = "Set1", name = "Species") +
   xlab("Depth effect") +
   theme_bw() +
