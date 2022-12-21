@@ -24,7 +24,7 @@ yt_depth <- sim_parabola(mu = log(90),
 xyz <- data.frame(grid) # works with new stars based raster object (latest GitHub version)
 (profile <- ggplot(data = xyz) +
   geom_ribbon(aes(x = x, ymin = max(depth), ymax = depth), fill = "grey60", color = "grey50") +
-  scale_y_reverse(expand = c(0, 0)) +
+  scale_y_reverse(expand = c(0, 0), limits = c(max(xyz$depth), 0)) +
   scale_x_continuous(expand = c(0, 0)) +
   ylab("Depth (m)") +
   theme_bw())
@@ -39,7 +39,7 @@ depth_effect <- data.frame(depth = c(depth, depth),
 
 (parabola <- ggplot(data = depth_effect) +
   geom_path(aes(x = exp(effect), y = depth, color = species), size = 1) +
-  scale_y_reverse(expand = c(0, 0)) +
+  scale_y_reverse(expand = c(0, 0), limits = c(max(xyz$depth), 0)) +
   scale_color_brewer(palette = "Set1", name = "Species") +
   xlab("Depth effect") +
   theme_bw() +
