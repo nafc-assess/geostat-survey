@@ -81,7 +81,7 @@ r30 <- ggplot() +
         strip.background = element_rect(fill = "grey90"),
         legend.title = element_text(size = 14),
         legend.text = element_text(size = 14)) +
-  labs(title = "b) 30% set reduction")
+  labs(title = "b) Set reduction")
 
 b30 <- ggplot() +
   geom_sf(data = strat, mapping = aes(), fill = "grey90", alpha = 0.4, colour = "grey20", size = 1, inherit.aes = FALSE) +
@@ -97,7 +97,7 @@ b30 <- ggplot() +
         strip.background = element_rect(fill = "grey90"),
         legend.title = element_text(size = 14),
         legend.text = element_text(size = 14)) +
-  labs(title = "c) 30% area blocked")
+  labs(title = "c) Area blocked")
 
 
 blocked_strat <- strat |>
@@ -123,7 +123,7 @@ sr <- ggplot() +
 figure2 <- ggarrange(base, r30, b30, sr, ncol = 4, nrow = 1, legend = "bottom", common.legend = TRUE)
 figure2
 
-ggsave("figure2_samples.pdf", plot = figure2, width = 11, height = 3, units = "in", dpi = 500, bg = "white")
+ggsave("figure2_samples.pdf", plot = figure2, width = 10, height = 3, units = "in", dpi = 500, bg = "white")
 
 
 ######################### Figure 3: Example time series of estimated abundance indices
@@ -142,7 +142,7 @@ a <- ggplot() +
               filter(pop == 1 | pop == 2 | pop == 3)|>
               filter(species == "Cod-like") |>
               filter(type == "Bootstrapped" | type ==  "DG" | type == "DG + Depth"),
-            aes(year, N, colour = type), size = 1) +
+            aes(year, N, colour = type), linewidth = 1) +
   geom_ribbon(data = index_all_scenarios |>
                 filter(pop == 1 | pop == 2 | pop == 3)|>
                 filter(species == "Cod-like") |>
@@ -169,7 +169,7 @@ b <- ggplot() +
               filter(pop == 1 | pop == 2 | pop == 3)|>
               filter(species == "Yellowtail-like") |>
               filter(type == "Bootstrapped" | type == "DG" | type == "DG + Depth"),
-            aes(year, N, colour = type), size = 1) +
+            aes(year, N, colour = type), linewidth = 1) +
   geom_ribbon(data = index_all_scenarios |>
                 filter(pop == 1 | pop == 2 | pop == 3)|>
                 filter(species == "Yellowtail-like") |>
@@ -194,11 +194,19 @@ b <- ggplot() +
 figure3 <- ggarrange(a, b, ncol = 1, nrow = 2, legend = "bottom", common.legend = TRUE)
 figure3
 
-ggsave("figure3.pdf", plot = figure3, width = 10, height = 12, units = "in", dpi = 500, bg = "white")
+ggsave("figure3_timeseries.pdf", plot = figure3, width = 10, height = 10, units = "in", dpi = 500, bg = "white")
 
 
 #### Figure 4: Distributions of root mean squared log error (RMSLE) and mean relative error (MRE)
 
+index_all_scenarios$type <- factor(index_all_scenarios$type, levels = c("TW + Depth",
+                                                                        "TW",
+                                                                        "NB + Depth",
+                                                                        "NB",
+                                                                        "DG + Depth",
+                                                                        "DG",
+                                                                        "Design-based",
+                                                                        "Bootstrapped"))
 index_all_scenarios_accuracy <-
   index_all_scenarios |>
   filter(year > 10) |>
@@ -207,37 +215,22 @@ index_all_scenarios_accuracy <-
   filter(type !=  "Design-based" | scenario !=  "Strata removal") |>
   group_by(pop, type, scenario, species) |>
   summarise(MRE = mean((log(N) - log(true)) / log(true)),
-            RMSLE =  sqrt(mean((log(N) - log(true))^2)))
+            RMSE =  sqrt(mean((log(N) - log(true))^2)))
 
 index_all_scenarios_accuracy_long <- index_all_scenarios_accuracy |>
   pivot_longer(-c(type, pop, scenario, species))
 
-result_table <- index_all_scenarios_accuracy_long |>
+metrics_mean <- index_all_scenarios_accuracy_long |>
   group_by(name, type, species, scenario) |>
   summarise(m = mean(value))
 
-result_table$type <- factor(result_table$type, levels = c("TW + Depth",
-                                                        "TW",
-                                                        "NB + Depth",
-                                                        "NB",
-                                                        "DG + Depth",
-                                                        "DG",
-                                                        "Design-based"))
-
-index_all_scenarios_accuracy_long$type <- factor(index_all_scenarios_accuracy_long$type , levels = c("TW + Depth",
-                                                                                                   "TW",
-                                                                                                   "NB + Depth",
-                                                                                                   "NB",
-                                                                                                   "DG + Depth",
-                                                                                                   "DG",
-                                                                                                   "Design-based"))
-a <- result_table |>
-  filter(name == "RMSLE") |>
+a <- metrics_mean |>
+  filter(name == "RMSE") |>
   ggplot(aes(x =  m, y =  type)) +
   geom_vline(xintercept = 0, linetype = 2) +
-  geom_point(data = index_all_scenarios_accuracy_long |> filter(name == "RMSLE"),
-             aes(x =  value, y =  type), col = "grey", alpha = 0.5) +
-  geom_point(aes(colour = type), size = 3) +
+  geom_violin(data = index_all_scenarios_accuracy_long |> filter(name == "RMSE"),
+              aes(x =  value, y =  type, col = type), alpha = 0.5) +
+  geom_point(aes(), colour = "black", size = 1) +
   facet_grid(species ~ scenario) +
   theme_bw() +
   scale_color_manual(values = c("DG" = "#1F78B4",
@@ -251,15 +244,15 @@ a <- result_table |>
   labs(x = "RMSLE", y = "", colour = "Estimator", fill = "Estimator") +
   theme(text = element_text(size = 14))+
   theme(strip.background = element_rect(fill = "grey97")) +
-  labs(title = "a) Root mean square log error")
+  labs(title = "a) Root mean square error")
 
-b <- result_table |>
+b <- metrics_mean |>
   filter(name == "MRE") |>
   ggplot(aes(x =  m, y =  type)) +
   geom_vline(xintercept = 0, linetype = 2) +
-  geom_point(data = index_all_scenarios_accuracy_long |> filter(name == "MRE"),
-             aes(x =  value, y =  type), col = "grey", alpha = 0.5) +
-  geom_point(aes(colour = type), size = 3) +
+  geom_violin(data = index_all_scenarios_accuracy_long |> filter(name == "MRE"),
+              aes(x =  value, y =  type, col = type), alpha = 0.5) +
+  geom_point(aes(), colour = "black", size = 1) +
   facet_grid(species ~ scenario) +
   theme_bw() +
   scale_color_manual(values = c("DG" = "#1F78B4",
@@ -276,12 +269,43 @@ b <- result_table |>
   labs(title = "b) Mean relative error")
 
 
+### CI width
 
-figure4_means <- ggarrange(a, b, ncol = 1, nrow = 2, legend = "none")
+CI_width <- index_all_scenarios |>
+  filter(type !=  "Design-based") |>
+  mutate(CI_width = upr-lwr) |>
+  group_by(type, scenario, species) |>
+  summarise(mCI_width = mean(CI_width))
 
-figure4_means
+CI_width_per_pop <- index_all_scenarios |>
+  filter(type !=  "Design-based") |>
+  mutate(CI_width = upr-lwr) |>
+  group_by(pop, type, scenario, species) |>
+  summarise(mCI_width = mean(CI_width))
 
-ggsave("figure4_means.pdf", plot = figure4_means, width = 10, height = 12, units = "in", dpi = 500, bg = "white")
+c <- ggplot(CI_width |> filter(type !=  "Bootstrapped" | scenario !=  "Strata removal")) +
+  geom_violin(data= CI_width_per_pop |> filter(type !=  "Bootstrapped" | scenario !=  "Strata removal"), aes(log(mCI_width), type, col = type),
+              alpha = 0.5)+
+  geom_point(aes(log(mCI_width), type), colour = "black", size=1)+
+  facet_grid(species ~ scenario, scales = "free_x")+
+  theme_bw() +
+  scale_color_manual(values = c("DG" = "#1F78B4",
+                                "DG + Depth" = "#A6CEE3",
+                                "NB" = "#33A02C",
+                                "NB + Depth" =  "#B2DF8A",
+                                "TW" = "#E31A1C",
+                                "TW + Depth" = "#FB9A99",
+                                "Bootstrapped" = "#FDBF6F"))+
+  theme(legend.position =  NULL)+
+  labs(x = "CI width", y = "", colour = "Estimator", fill = "Estimator") +
+  theme(text = element_text(size = 14))+
+  theme(strip.background = element_rect(fill = "grey97")) +
+  labs(title = "c) Confidence interval width")
+
+figure4_performance <- ggarrange(a, b, c, ncol = 1, nrow = 3, legend = "none")
+figure4_performance
+
+ggsave("figure4_performance.pdf", plot = figure4_performance, width = 10, height = 12, units = "in", dpi = 500, bg = "white")
 
 ################### Figure 5: Coverage of the 95% confidence intervals
 
@@ -349,7 +373,17 @@ b <- CI_coverage |>
         strip.background = element_rect(fill = "grey97"))
 
 
-figure5 <- ggarrange(a, b, ncol = 1, nrow = 2, legend = "bottom", common.legend = TRUE)
-figure5
+require(grid)   # for the textGrob() function
 
-ggsave("figure5.pdf", plot = figure5, width = 10, height = 7, units = "in", dpi = 500, bg = "white")
+figure5_CI <- ggarrange(a + rremove("ylab") + rremove("xlab"),
+                    b + rremove("ylab") + rremove("xlab"), # remove axis labels from plots
+                    labels = NULL,
+                    ncol = 1, nrow = 2,
+                    common.legend = TRUE, legend = "bottom",
+                    align = "hv",
+                    font.label = list(size = 14, color = "black", face = "bold", family = NULL, position = "top"))
+
+figure5_CI <- annotate_figure(figure, left = textGrob("Confidence interval coverage", rot = 90, vjust = 0.5, gp = gpar(cex = 1.3)),
+                bottom = textGrob("", gp = gpar(cex = 1.3)))
+
+ggsave("figure5_CI.pdf", plot = figure5_CI, width = 10, height = 5, units = "in", dpi = 500, bg = "white")
