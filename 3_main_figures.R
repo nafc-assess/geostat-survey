@@ -51,6 +51,8 @@ for(i in seq_along(setdet_cod_SR)){
   setdet_cod_sf_SR[[i]] <- st_as_sf(setdet_cod_SR[[i]])
 }
 
+blocked_strat <- strat |>
+  filter(strat %in% c(2,3,4,5,17,18,19,20))
 
 base <- ggplot() +
   geom_sf(data = strat, mapping = aes(), fill = "grey90", alpha = 0.4, colour = "grey20", size = 1, inherit.aes = FALSE) +
@@ -98,10 +100,6 @@ b30 <- ggplot() +
         legend.title = element_text(size = 14),
         legend.text = element_text(size = 14)) +
   labs(title = "c) Area blocked")
-
-
-blocked_strat <- strat |>
-  filter(strat %in% c(2,3,4,5,17,18,19,20))
 
 sr <- ggplot() +
   geom_sf(data = strat, mapping = aes(), fill = "grey90", alpha = 0.4, colour = "grey20", size = 1, inherit.aes = FALSE) +
@@ -273,12 +271,14 @@ b <- metrics_mean |>
 
 CI_width <- index_all_scenarios |>
   filter(type !=  "Design-based") |>
+  filter(year > 10) |>
   mutate(CI_width = upr-lwr) |>
   group_by(type, scenario, species) |>
   summarise(mCI_width = mean(CI_width))
 
 CI_width_per_pop <- index_all_scenarios |>
   filter(type !=  "Design-based") |>
+  filter(year > 10) |>
   mutate(CI_width = upr-lwr) |>
   group_by(pop, type, scenario, species) |>
   summarise(mCI_width = mean(CI_width))
@@ -317,10 +317,6 @@ CI_coverage <- index_all_scenarios |>
   summarise(mc = mean(covered)) |>
   group_by(scenario) |>
   arrange(mc)
-
-CI_coverage |>
-  group_by(species, scenario) |>
-  top_n(1, mc)
 
 a <- CI_coverage |>
   filter(species == "Cod-like") |>
@@ -372,7 +368,6 @@ b <- CI_coverage |>
         axis.text.x = element_blank(),
         strip.background = element_rect(fill = "grey97"))
 
-
 require(grid)   # for the textGrob() function
 
 figure5_CI <- ggarrange(a + rremove("ylab") + rremove("xlab"),
@@ -383,7 +378,9 @@ figure5_CI <- ggarrange(a + rremove("ylab") + rremove("xlab"),
                     align = "hv",
                     font.label = list(size = 14, color = "black", face = "bold", family = NULL, position = "top"))
 
-figure5_CI <- annotate_figure(figure, left = textGrob("Confidence interval coverage", rot = 90, vjust = 0.5, gp = gpar(cex = 1.3)),
+figure5_CI <- annotate_figure(figure5_CI, left = textGrob("Confidence interval coverage", rot = 90, vjust = 0.5, gp = gpar(cex = 1.3)),
                 bottom = textGrob("", gp = gpar(cex = 1.3)))
+
+figure5_CI
 
 ggsave("figure5_CI.pdf", plot = figure5_CI, width = 10, height = 5, units = "in", dpi = 500, bg = "white")
