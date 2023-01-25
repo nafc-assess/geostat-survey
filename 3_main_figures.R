@@ -239,7 +239,7 @@ a <- metrics_mean |>
                                 "TW + Depth" = "#FB9A99",
                                 "Design-based" = "#FDBF6F")) +
   theme(legend.position = NULL)+
-  labs(x = "RMSLE", y = "", colour = "Estimator", fill = "Estimator") +
+  labs(x = "RMSE", y = "", colour = "Estimator", fill = "Estimator") +
   theme(text = element_text(size = 14))+
   theme(strip.background = element_rect(fill = "grey97")) +
   labs(title = "a) Root mean square error")
@@ -267,23 +267,61 @@ b <- metrics_mean |>
   labs(title = "b) Mean relative error")
 
 
-### CI width
+figure4_performance <- ggarrange(a, b, ncol = 1, nrow = 2, legend = "none")
+figure4_performance
+
+ggsave("figure4_performance.pdf", plot = figure4_performance, width = 10, height = 10, units = "in", dpi = 500, bg = "white")
+
+################### Figure 5: Coverage of the 95% confidence intervals
+
+CI_coverage <- index_all_scenarios |>
+  filter(type !=  "Design-based") |>
+  filter(type !=  "Bootstrapped" | scenario !=  "Strata removal") |>
+  mutate(covered = lwr < true & upr > true) |>
+  group_by(type, scenario, species) |>
+  summarise(mc = mean(covered)) |>
+  group_by(scenario) |>
+  arrange(mc)
 
 CI_width <- index_all_scenarios |>
   filter(type !=  "Design-based") |>
-  filter(year > 10) |>
+  filter(type !=  "Bootstrapped" | scenario !=  "Strata removal") |>
   mutate(CI_width = upr-lwr) |>
   group_by(type, scenario, species) |>
   summarise(mCI_width = mean(CI_width))
 
 CI_width_per_pop <- index_all_scenarios |>
   filter(type !=  "Design-based") |>
-  filter(year > 10) |>
+  filter(type !=  "Bootstrapped" | scenario !=  "Strata removal") |>
   mutate(CI_width = upr-lwr) |>
   group_by(pop, type, scenario, species) |>
   summarise(mCI_width = mean(CI_width))
 
-c <- ggplot(CI_width |> filter(type !=  "Bootstrapped" | scenario !=  "Strata removal")) +
+
+a <- CI_coverage |>
+  ggplot(aes(x = mc, y = type, fill = type, group = paste(scenario, type))) +
+  geom_point(position = position_dodge(width = 0.6), mapping = aes(colour = type), size = 3) +
+  geom_linerange(xmin = 0, mapping = aes(xmax = mc, colour = type), position = position_dodge(width = 0.6)) +
+  facet_grid(species ~ scenario)+
+  scale_x_continuous(breaks = seq(0, 1, 0.2))+
+  scale_colour_manual(values = c("Bootstrapped" = "#FDBF6F",
+                                 "DG" = "#1F78B4",
+                                 "DG + Depth" = "#A6CEE3",
+                                 "NB" = "#33A02C",
+                                 "NB + Depth" =  "#B2DF8A",
+                                 "TW" = "#E31A1C",
+                                 "TW + Depth" = "#FB9A99"))+
+  labs(y = "", x = "CI coverage", colour = "Estimator", fill = "Estimator")+
+  labs(title = " a) Confidence interval coverage") +
+  coord_cartesian(xlim = c(0.5 ,1), expand = FALSE) +
+  theme_bw() +
+  geom_vline(xintercept = 0.95, linetype = 2)+
+  theme(legend.position = NULL) +
+  theme(text = element_text(size = 14)) +
+  theme(strip.background = element_rect(fill = "grey97"))
+
+
+b <- ggplot(CI_width) +
   geom_violin(data= CI_width_per_pop |> filter(type !=  "Bootstrapped" | scenario !=  "Strata removal"), aes(log(mCI_width), type, col = type),
               alpha = 0.5)+
   geom_point(aes(log(mCI_width), type), colour = "black", size=1)+
@@ -300,87 +338,11 @@ c <- ggplot(CI_width |> filter(type !=  "Bootstrapped" | scenario !=  "Strata re
   labs(x = "CI width", y = "", colour = "Estimator", fill = "Estimator") +
   theme(text = element_text(size = 14))+
   theme(strip.background = element_rect(fill = "grey97")) +
-  labs(title = "c) Confidence interval width")
+  labs(title = "b) Confidence interval width")
 
-figure4_performance <- ggarrange(a, b, c, ncol = 1, nrow = 3, legend = "none")
-figure4_performance
 
-ggsave("figure4_performance.pdf", plot = figure4_performance, width = 10, height = 12, units = "in", dpi = 500, bg = "white")
-
-################### Figure 5: Coverage of the 95% confidence intervals
-
-CI_coverage <- index_all_scenarios |>
-  filter(type !=  "Design-based") |>
-  filter(type !=  "Bootstrapped" | scenario !=  "Strata removal") |>
-  mutate(covered = lwr < true & upr > true) |>
-  group_by(type, scenario, species) |>
-  summarise(mc = mean(covered)) |>
-  group_by(scenario) |>
-  arrange(mc)
-
-a <- CI_coverage |>
-  filter(species == "Cod-like") |>
-  ggplot(aes(x = 0, y = mc, fill = type, group = paste(scenario, type))) +
-  geom_point(position = position_dodge(width = 0.6), mapping = aes(colour = type), size = 5) +
-  geom_linerange(ymin = 0, mapping = aes(ymax = mc, colour = type), position = position_dodge(width = 0.6)) +
-  facet_grid(~ scenario)+
-  scale_y_continuous(breaks = seq(0, 1, 0.2))+
-  scale_colour_manual(values = c("Bootstrapped" = "#FDBF6F",
-                               "DG" = "#1F78B4",
-                               "DG + Depth" = "#A6CEE3",
-                               "NB" = "#33A02C",
-                               "NB + Depth" =  "#B2DF8A",
-                               "TW" = "#E31A1C",
-                               "TW + Depth" = "#FB9A99"))+
-  labs(x = "", y = "Confidence interval coverage", colour = "Estimator", fill = "Estimator")+
-  labs(title = "a) Cod-like") +
-  coord_cartesian(ylim = c(0,1), expand = FALSE) +
-  theme_bw() +
-  geom_hline(yintercept = 0.95, linetype = 2)+
-  theme(legend.position = "bottom") +
-  theme(text = element_text(size = 14)) +
-  theme(axis.title.x = element_blank(),
-        axis.text.x = element_blank(),
-        strip.background = element_rect(fill = "grey97"))
-
-b <- CI_coverage |>
-  filter(species == "Yellowtail-like") |>
-  ggplot(aes(x = 0, y = mc, fill = type, group = paste(scenario, type))) +
-  geom_point(position = position_dodge(width = 0.6), mapping = aes(colour = type), size = 5) +
-  geom_linerange(ymin = 0, mapping = aes(ymax = mc, colour = type), position = position_dodge(width = 0.6)) +
-  facet_grid(~ scenario)+
-  scale_y_continuous(breaks = seq(0, 1, 0.2))+
-  scale_colour_manual(values = c("Bootstrapped" = "#FDBF6F",
-                               "DG" = "#1F78B4",
-                               "DG + Depth" = "#A6CEE3",
-                               "NB" = "#33A02C",
-                               "NB + Depth" =  "#B2DF8A",
-                               "TW" = "#E31A1C",
-                               "TW + Depth" = "#FB9A99"))+
-  labs(x = "", y = "Confidence interval coverage", colour = "Estimator", fill = "Estimator")+
-  labs(title = "b) Yellowtail-like") +
-  coord_cartesian(ylim = c(0,1), expand = FALSE) +
-  theme_bw() +
-  geom_hline(yintercept = 0.95, linetype = 2)+
-  theme(legend.position = "bottom") +
-  theme(text = element_text(size = 14)) +
-  theme(axis.title.x = element_blank(),
-        axis.text.x = element_blank(),
-        strip.background = element_rect(fill = "grey97"))
-
-require(grid)   # for the textGrob() function
-
-figure5_CI <- ggarrange(a + rremove("ylab") + rremove("xlab"),
-                    b + rremove("ylab") + rremove("xlab"), # remove axis labels from plots
-                    labels = NULL,
-                    ncol = 1, nrow = 2,
-                    common.legend = TRUE, legend = "bottom",
-                    align = "hv",
-                    font.label = list(size = 14, color = "black", face = "bold", family = NULL, position = "top"))
-
-figure5_CI <- annotate_figure(figure5_CI, left = textGrob("Confidence interval coverage", rot = 90, vjust = 0.5, gp = gpar(cex = 1.3)),
-                bottom = textGrob("", gp = gpar(cex = 1.3)))
-
+figure5_CI <- ggarrange(a, b, ncol = 1, nrow = 2, legend = "none")
 figure5_CI
 
-ggsave("figure5_CI.pdf", plot = figure5_CI, width = 10, height = 5, units = "in", dpi = 500, bg = "white")
+
+ggsave("figure5_CI.pdf", plot = figure5_CI, width = 10, height = 10, units = "in", dpi = 500, bg = "white")

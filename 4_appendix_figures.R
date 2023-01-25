@@ -196,7 +196,7 @@ a <- pop_dist_sf_cod[[1]] |>
   filter(year > 10 & year < 16) |>
   ggplot(aes(x, y, fill = I_all_age)) +
   geom_raster() +
-  scale_fill_viridis_c(trans = "log10") +
+  scale_fill_viridis_c(trans = "log10", na.value="white") +
   labs(fill="Abundance")+
   facet_wrap(~year, nrow=1, labeller = labeller(year =
                                                   c("11" = "Year 11",
@@ -204,7 +204,8 @@ a <- pop_dist_sf_cod[[1]] |>
                                                     "13" = "Year 13",
                                                     "14" = "Year 14",
                                                     "15" = "Year 15"))) +
-  geom_text(data=true_table_cod,aes(x=0, y=-120, label=paste0(round(true/1e+06, 2), " * 1e+06")), col= "black", size = 4, inherit.aes = FALSE)+
+  geom_text(data=true_table_cod,aes(x=0, y=-120, label=paste0(round(true/1e+06, 1), " * 1e+06")), col= "black", size = 4, inherit.aes = FALSE)+
+
   coord_fixed(expand = FALSE) +
   theme_bw()+
   theme(text = element_text(size = 14))+
@@ -218,7 +219,8 @@ a <- pop_dist_sf_cod[[1]] |>
   theme(panel.spacing = unit(1, "lines"))+
   labs(title = "a) Actual distribution") +
   theme(axis.title=element_blank(),
-        axis.text=element_blank())
+        axis.text=element_blank(),
+        axis.ticks = element_blank())
 
 a2 <- strat_cod_sr |>
   filter(year > 10 & year < 16) |>
@@ -250,7 +252,8 @@ a2 <- strat_cod_sr |>
   theme(panel.spacing = unit(1, "lines"))+
   labs(title = "b) Distribution from design-based")+
   theme(axis.title=element_blank(),
-        axis.text=element_blank())
+        axis.text=element_blank(),
+        axis.ticks = element_blank())
 
 b <- sdm_DG_IID_dg_pred_cod[[1]] |>
   filter(year > 10 & year < 16) |>
@@ -264,7 +267,7 @@ b <- sdm_DG_IID_dg_pred_cod[[1]] |>
                                                     "13" = "Year 13",
                                                     "14" = "Year 14",
                                                     "15" = "Year 15"))) +
-  geom_text(data=dg_table_cod,aes(x=0, y=-120, label=paste0(round(N/1e+06, 2), " * 1e+06")), col= "black", size = 4, inherit.aes = FALSE) +
+  geom_text(data=dg_table_cod,aes(x=0, y=-120, label=paste0(round(N/1e+06, 1), " * 1e+06")), col= "black", size = 4, inherit.aes = FALSE) +
   coord_fixed(expand = FALSE) +
   theme_bw()+
   theme(text = element_text(size = 14))+
@@ -278,7 +281,8 @@ b <- sdm_DG_IID_dg_pred_cod[[1]] |>
   theme(panel.spacing = unit(1, "lines"))+
   labs(title = "c) Distribution from DG model")+
   theme(axis.title=element_blank(),
-        axis.text=element_blank())
+        axis.text=element_blank(),
+        axis.ticks = element_blank())
 
 c <- sdm_DG_IID_dg_pred_depth_cod[[1]] |>
   filter(year > 10 & year < 16) |>
@@ -292,7 +296,7 @@ c <- sdm_DG_IID_dg_pred_depth_cod[[1]] |>
                                                     "13" = "Year 13",
                                                     "14" = "Year 14",
                                                     "15" = "Year 15"))) +
-  geom_text(data=dg_table_depth_cod,aes(x=0, y=-120, label=paste0(round(N/1e+06, 2), " * 1e+06")), col= "black", size = 4, inherit.aes = FALSE) +
+  geom_text(data=dg_table_depth_cod,aes(x=0, y=-120, label=paste0(round(N/1e+06, 1), " * 1e+06")), col= "black", size = 4, inherit.aes = FALSE) +
   coord_fixed(expand = FALSE) +
   theme_bw()+
   theme(text = element_text(size = 14))+
@@ -306,7 +310,8 @@ c <- sdm_DG_IID_dg_pred_depth_cod[[1]] |>
   theme(panel.spacing = unit(1, "lines"))+
   labs(title = "d) Distribution from DG + depth effect model")+
   theme(axis.title=element_blank(),
-        axis.text=element_blank())
+        axis.text=element_blank(),
+        axis.ticks = element_blank())
 
 FigureS_cod_maps <- ggarrange(a, a2, b, c, ncol = 1, nrow = 4, legend = "bottom", common.legend = TRUE)
 
@@ -434,7 +439,7 @@ ggplot(aes(x, y, fill = I_all_age)) +
                                                     "13" = "Year 13",
                                                     "14" = "Year 14",
                                                     "15" = "Year 15"))) +
-  geom_text(data=true_table_yt,aes(x=0, y=-120, label=paste0(round(true/1e+07, 2), " * 1e+07")), col= "black", size = 4, inherit.aes = FALSE)+
+  geom_text(data=true_table_yt,aes(x=0, y=-120, label=paste0(round(true/1e+08, 1), " * 1e+08")), col= "black", size = 4, inherit.aes = FALSE)+
   coord_fixed(expand = FALSE) +
   theme_bw()+
   theme(text = element_text(size = 14))+
@@ -448,7 +453,8 @@ ggplot(aes(x, y, fill = I_all_age)) +
   theme(panel.spacing = unit(1, "lines"))+
   labs(title = "a) Actual distribution") +
   theme(axis.title=element_blank(),
-        axis.text=element_blank())
+        axis.text=element_blank(),
+        axis.ticks = element_blank())
 
 a2 <- strat_yt_sr |>
   filter(year > 10 & year < 16) |>
@@ -466,7 +472,7 @@ a2 <- strat_yt_sr |>
                                                     "13" = "Year 13",
                                                     "14" = "Year 14",
                                                     "15" = "Year 15"))) +
-  geom_text(data=design_table_yt,aes(x=0, y=-120, label=paste0(round(Nsum/1e+07, 1), " * 1e+07")), col= "black", size = 4, inherit.aes = FALSE)+
+  geom_text(data=design_table_yt,aes(x=0, y=-120, label=paste0(round(Nsum/1e+08, 1), " * 1e+08")), col= "black", size = 4, inherit.aes = FALSE)+
   #coord_fixed(expand = FALSE) +
   theme_bw()+
   theme(text = element_text(size = 14))+
@@ -480,7 +486,8 @@ a2 <- strat_yt_sr |>
   theme(panel.spacing = unit(1, "lines"))+
   labs(title = "b) Distribution from design-based")+
   theme(axis.title=element_blank(),
-        axis.text=element_blank())
+        axis.text=element_blank(),
+        axis.ticks = element_blank())
 
 b <- sdm_DG_IID_dg_pred_yt[[1]] |>
   filter(year > 10 & year < 16) |>
@@ -494,7 +501,7 @@ ggplot(aes(x, y, fill = plogis(est1) * exp(est2))) +
                                                     "13" = "Year 13",
                                                     "14" = "Year 14",
                                                     "15" = "Year 15"))) +
-  geom_text(data=dg_table_yt,aes(x=0, y=-120, label=paste0(round(N/1e+07, 2), " * 1e+07")), col= "black", size = 4, inherit.aes = FALSE) +
+  geom_text(data=dg_table_yt,aes(x=0, y=-120, label=paste0(round(N/1e+08, 1), " * 1e+08")), col= "black", size = 4, inherit.aes = FALSE) +
   coord_fixed(expand = FALSE) +
   theme_bw()+
   theme(text = element_text(size = 14))+
@@ -508,7 +515,8 @@ ggplot(aes(x, y, fill = plogis(est1) * exp(est2))) +
   theme(panel.spacing = unit(1, "lines"))+
   labs(title = "c) Distribution from DG model")+
   theme(axis.title=element_blank(),
-        axis.text=element_blank())
+        axis.text=element_blank(),
+        axis.ticks = element_blank())
 
 c <- sdm_DG_IID_dg_pred_depth_yt[[1]] |>
   filter(year > 10 & year < 16) |>
@@ -522,7 +530,7 @@ ggplot(aes(x, y, fill = plogis(est1) * exp(est2))) +
                                                     "13" = "Year 13",
                                                     "14" = "Year 14",
                                                     "15" = "Year 15"))) +
-geom_text(data=dg_table_depth_yt,aes(x=0, y=-120, label=paste0(round(N/1e+07, 2), " * 1e+07")), col= "black", size = 4, inherit.aes = FALSE) +
+geom_text(data=dg_table_depth_yt,aes(x=0, y=-120, label=paste0(round(N/1e+08, 1), " * 1e+08")), col= "black", size = 4, inherit.aes = FALSE) +
   coord_fixed(expand = FALSE) +
   theme_bw()+
   theme(text = element_text(size = 14))+
@@ -536,7 +544,8 @@ geom_text(data=dg_table_depth_yt,aes(x=0, y=-120, label=paste0(round(N/1e+07, 2)
   theme(panel.spacing = unit(1, "lines"))+
   labs(title = "d) Distribution from DG + depth effect model")+
   theme(axis.title=element_blank(),
-        axis.text=element_blank())
+        axis.text=element_blank(),
+        axis.ticks = element_blank())
 
 FigureS_yt_maps <- ggarrange(a, a2, b, c, ncol = 1, nrow = 4, legend = "bottom", common.legend = TRUE)
 
@@ -778,54 +787,64 @@ yt_models_year12 <- rbind(yt_nb_pred_long |>
                             filter(name != "est_rf"))
 
 model_res <- c(
-  `est` = "Estimate",
-  `est_non_rf` = "Year",
-  `omega_s` = "Spatial RF",
-  `epsilon_st` = "Spatiotemporal RF"
+  `est` = "a) Estimate",
+  `est_non_rf` = "b) Year",
+  `omega_s` = "c) Spatial RF",
+  `epsilon_st` = "d) Spatiotemporal RF"
 )
 
 nb <- ggplot(yt_models_year12 |> filter(type == "NB")) +
   geom_raster(aes(x, y, fill = exp(value))) +
   scale_fill_viridis_c(trans = "log10") +
+  geom_sf(data=blocked_strat|>
+            filter(year == 12), colour="#ffffff50", fill=NA) +
   #facet_grid(rows= vars(year), cols=vars(type))+
   facet_wrap(~ factor(name, levels=c('est','est_non_rf','omega_s', 'epsilon_st')), ncol = 4, labeller = as_labeller(model_res)) +
   theme_bw() +
-  #coord_fixed()+
+  coord_sf(expand=FALSE) +
   labs(fill = "") +
   theme(text = element_text(size = 14))+
   theme(strip.background = element_rect(fill = "grey97")) +
-  labs(title = "a) Negative binomial model") +
+  labs(title = "Negative binomial model") +
   theme(legend.position = "bottom", legend.spacing.x = unit(0.5, 'cm'), legend.direction="horizontal")+
   theme(legend.key.size = unit(1.5, 'cm'), #change legend key size
         legend.key.height = unit(0.5, 'cm'), #change legend key height
         legend.key.width = unit(2, 'cm'), #change legend key width
         legend.title = element_text(size=14), #change legend title font size
-        legend.text = element_text(size=10))
+        legend.text = element_text(size=10),
+        axis.title=element_blank(),
+        axis.text=element_blank(),
+        axis.ticks = element_blank())
 
 model_res2 <- c(
-  `est` = "Estimate",
-  `est_non_rf` = "Year + Depth",
-  `omega_s` = "Spatial RF",
-  `epsilon_st` = "Spatiotemporal RF"
+  `est` = "e) Estimate",
+  `est_non_rf` = "f) Year + Depth",
+  `omega_s` = "g) Spatial RF",
+  `epsilon_st` = "h) Spatiotemporal RF"
 )
 
 nb_depth <- ggplot(yt_models_year12 |> filter(type == "NB + Depth")) +
   geom_raster(aes(x, y, fill = exp(value))) +
   scale_fill_viridis_c(trans = "log10") +
+  geom_sf(data=blocked_strat|>
+            filter(year == 12 ), colour="#ffffff50", fill=NA) +
+  coord_sf(expand=FALSE) +
   #facet_grid(rows= vars(year), cols=vars(type))+
   facet_wrap(~ factor(name, levels=c('est','est_non_rf','omega_s', 'epsilon_st')), ncol = 4, labeller = as_labeller(model_res2)) +
   theme_bw() +
-  #coord_fixed()+
   labs(fill = "") +
   theme(text = element_text(size = 14))+
   theme(strip.background = element_rect(fill = "grey97")) +
-  labs(title = "b) Negative binomial model including depth covariate") +
+  labs(title = "Negative binomial model including depth covariate") +
   theme(legend.position = "bottom", legend.spacing.x = unit(0.5, 'cm'), legend.direction="horizontal")+
   theme(legend.key.size = unit(1.5, 'cm'), #change legend key size
         legend.key.height = unit(0.5, 'cm'), #change legend key height
         legend.key.width = unit(2, 'cm'), #change legend key width
         legend.title = element_text(size=14), #change legend title font size
-        legend.text = element_text(size=10))
+        legend.text = element_text(size=10),
+        axis.title=element_blank(),
+        axis.text=element_blank(),
+        axis.ticks = element_blank())
 
 FigureS_RF <- ggarrange(nb, nb_depth, ncol = 1, nrow = 2, common.legend = TRUE, legend = "bottom")
 FigureS_RF
@@ -840,6 +859,9 @@ a <- yt_nb_pred_long |>
   ggplot() +
   geom_raster(aes(x, y, fill = exp(value))) +
   scale_fill_viridis_c(trans = "log10") +
+  geom_sf(data=blocked_strat|>
+            filter(year < 6 | year > 15), colour="#ffffff50", fill=NA) +
+  coord_sf(expand=FALSE) +
   facet_wrap(~year, ncol=5, labeller = labeller(year =
                                                   c("1" = "Year 1",
                                                     "2" = "Year 2",
@@ -860,7 +882,10 @@ a <- yt_nb_pred_long |>
         legend.key.height = unit(0.5, 'cm'), #change legend key height
         legend.key.width = unit(2, 'cm'), #change legend key width
         legend.title = element_text(size=14), #change legend title font size
-        legend.text = element_text(size=10))
+        legend.text = element_text(size=10),
+        axis.title=element_blank(),
+        axis.text=element_blank(),
+        axis.ticks = element_blank())
 
 b <- yt_nb_depth_pred_long |>
   filter(year < 6 | year > 15) |>
@@ -868,6 +893,9 @@ b <- yt_nb_depth_pred_long |>
   ggplot() +
   geom_raster(aes(x, y, fill = exp(value))) +
   scale_fill_viridis_c(trans = "log10") +
+  geom_sf(data=blocked_strat|>
+            filter(year < 6 | year > 15), colour="#ffffff50", fill=NA, size = 0.4, alpha = 0.3) +
+  coord_sf(expand=FALSE) +
   facet_wrap(~year, ncol=5, labeller = labeller(year =
                                                   c("1" = "Year 1",
                                                     "2" = "Year 2",
@@ -888,7 +916,10 @@ b <- yt_nb_depth_pred_long |>
         legend.key.height = unit(0.5, 'cm'), #change legend key height
         legend.key.width = unit(2, 'cm'), #change legend key width
         legend.title = element_text(size=14), #change legend title font size
-        legend.text = element_text(size=10))
+        legend.text = element_text(size=10),
+        axis.title=element_blank(),
+        axis.text=element_blank(),
+        axis.ticks = element_blank())
 
 FigureS_st_maps <- ggarrange(a + rremove("ylab") + rremove("xlab"),
                              b + rremove("ylab") + rremove("xlab"),
