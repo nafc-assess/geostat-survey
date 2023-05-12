@@ -24,28 +24,7 @@ grid <- make_grid(x_range = c(-150, 150),
                   strat_splits = 2,
                   method = "spline")
 
-# Converting from RasterBrick to SpatialPolygonsDataFrame
-
-polylist_grid <- lapply(as.list(grid), rasterToPolygons)
-
-poly_cell <- lapply(as.list(grid$cell), rasterToPolygons)
-
-cell <- list(poly_cell, makeUniqueIDs = T) %>%
-  flatten() %>%
-  do.call(cbind, .) |>
-  st_as_sf()
-
-cell$TRUE. <-NULL
-
-
-# Combining all attributes to a single SpatialPolygonsDataFrame and convert it to sf
-
-
-grid_sf <- list(polylist_grid, makeUniqueIDs = T) |>
-  flatten()
-
-grid_sf <- do.call(cbind, grid_sf) |>
-  st_as_sf()
+grid_sf <- st_as_sf(grid)
 
 # Creating a buffer area
 
@@ -120,13 +99,12 @@ mpa <- block_poly_sf_30
 
 mpa$mpa <- 1L
 mpa
-cell
 
-cell_mpa <- st_intersection(mpa, cell)
+cell_mpa <- st_intersection(mpa, grid_sf)
 mapview(cell_mpa)
 
-cell$mpa <- 0
-cell_wo_mpa <- st_difference(cell, mpa)
+grid_sf$mpa <- 0
+cell_wo_mpa <- st_difference(grid_sf, mpa)
 mapview(cell_wo_mpa)
 
 output <- cell_mpa %>%
@@ -143,7 +121,7 @@ buff1 <- st_buffer(mpa, 10)
 mapview(buff1)
 buff1_mpa <- st_difference(buff1, mpa)
 mapview(buff1_mpa)
-buff1_mpa_cell <- st_intersection(buff1_mpa, cell)
+buff1_mpa_cell <- st_intersection(buff1_mpa, grid_sf)
 mapview(buff1_mpa_cell)
 buff1_mpa_cell$mpa <- 0.5
 buff1_mpa_cell$mpa.1 <- NULL
@@ -155,7 +133,7 @@ buff_mpa_cell <- cell_mpa %>%
   bind_rows(buff1_mpa_cell)
 mapview(buff_mpa_cell)
 
-cell_wo_mpa_buff <- st_difference(cell, buff1)
+cell_wo_mpa_buff <- st_difference(grid_sf, buff1)
 
 output2 <- buff_mpa_cell %>%
   bind_rows(cell_wo_mpa_buff)
