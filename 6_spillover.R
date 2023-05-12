@@ -157,7 +157,8 @@ grid <- make_grid(x_range = c(-150, 150),
 ## Hack: add mpa column to grid object
 grid_xy <- as.data.frame(grid)
 grid_xy$mpa <- 0
-grid_xy$mpa[grid_xy$y < 50 & grid_xy$y > -120 & grid_xy$x > -65 & grid_xy$x < 100] <- 1
+grid_xy$mpa[grid_xy$x < 50 & grid_xy$x > -120 & grid_xy$y > -65 & grid_xy$y < 100] <- 0.5
+grid_xy$mpa[grid_xy$x < 60 & grid_xy$x > -110 & grid_xy$y > -55 & grid_xy$y < 90] <- 1
 grid$mpa <- grid_xy$mpa
 
 plot(x ~ y, data = grid_xy, col = grid_xy$mpa)
@@ -177,7 +178,7 @@ grid_edat <- grid_edat[order(grid_edat$cell, grid_edat$year, grid_edat$age), ] #
 
 
 depth_par <- sim_nlf(formula = ~ alpha + ifelse(year > 10, (beta * mpa * (year - 10) / 10), 0) - ((depth - mu) ^ 2) / (2 * sigma ^ 2),
-                     coeff = list(alpha = 0, mu = 200, sigma = 70, beta = 0.2))
+                     coeff = list(alpha = 0, mu = 200, sigma = 70, beta = 5))
 
 depth <- depth_par(grid_edat)
 
@@ -189,5 +190,14 @@ grid_edat %>%
           frame = ~year) %>%
   add_lines()
 
+
+sim <- sim_abundance(ages = 1:20, years = 1:20) %>%
+  sim_distribution(grid = grid,
+                   ays_covar = sim_ays_covar(phi_age = 0.8,
+                                             phi_year = 0.1),
+                   depth_par = depth_par) # |> sim_survey(n_sims = 1, q = sim_logistic(k = 2, x0 = 3))
+
+plot_distribution(sim, ages = 5, years = 8:20, scale = "log", type = "heatmap")
+# plot_survey(sim, which_year = 20, which_sim = 1)
 
 
