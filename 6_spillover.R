@@ -161,3 +161,6 @@ output2 <- buff_mpa_cell %>%
   bind_rows(cell_wo_mpa_buff)
 
 mapview(output2)
+
+spill_mpa <- output2
+save(spill_mpa, file = "./Data/spill_mpa.Rdata")
