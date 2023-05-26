@@ -72,8 +72,8 @@ grid_with_mpa <- make_grid(x_range = c(-150, 150),
 
 grid_xy <- as.data.frame(grid_with_mpa)
 grid_xy$mpa <- 0
-grid_xy$mpa[grid_xy$x < 60 & grid_xy$x > -125 & grid_xy$y > -75 & grid_xy$y < 110] <- 0.7
-grid_xy$mpa[grid_xy$x < 50 & grid_xy$x > -115 & grid_xy$y > -65 & grid_xy$y < 100] <- 1
+grid_xy$mpa[grid_xy$x < 60 & grid_xy$x > -110 & grid_xy$y > -80 & grid_xy$y < 120] <- 0.7
+grid_xy$mpa[grid_xy$x < 50 & grid_xy$x > -100 & grid_xy$y > -70 & grid_xy$y < 110] <- 1
 grid_with_mpa$mpa <- grid_xy$mpa
 
 depth_mpa_par <- sim_nlf(formula = ~ alpha + ifelse(year > 10, (beta * mpa * (year - 10) / 10), 0) - ((log(depth) - mu) ^ 2) / (2 * sigma ^ 2),
