@@ -31,7 +31,7 @@ set.seed(1)
 survey_yellowtail <- furrr::future_map(seq_len(100), n_sims = 1, population_yellowtail, .options = furrr::furrr_options(seed = TRUE, packages = "SimSurvey"))
 gc()
 
-#save(survey_yellowtail, file = "./Data/survey_yellowtail_base.Rdata")
+#save(survey_yellowtail, file = "./data/survey_yellowtail_base.Rdata")
 
 ############# True abundance
 
@@ -60,7 +60,7 @@ for( i in seq_along(setdet_yellowtail)){
 
 setdet_yellowtail <- lapply(setdet_yellowtail, function(x) split(x, x$sim)) |> flatten()
 
-#save(setdet_yellowtail, file = "./Data/setdet_yellowtail_base.Rdata")
+#save(setdet_yellowtail, file = "./data/setdet_yellowtail_base.Rdata")
 
 ############# Bootstrapped index
 
@@ -233,20 +233,13 @@ for( i in seq_along(setdet_yellowtail)){
   setdet_yellowtail[[i]]$pop <- as.numeric(i)
 }
 
-# Converting the setdet to a SpatialPointsDataFrame and then to an sf object
-
-for (i in 1:length(setdet_yellowtail)){
-  coordinates(setdet_yellowtail[[i]]) = cbind(setdet_yellowtail[[i]]$x, setdet_yellowtail[[i]]$y)}
-
-setdet_yellowtail_sf <- map(setdet_yellowtail, function(x) {st_as_sf(x)})
-
 # Getting all samples before year 10
 
-samples10 <- map(setdet_yellowtail_sf, function(x) {subset(x, year < 11) |> st_drop_geometry() |> data.table()}) ### same for any perc
+samples10 <- map(setdet_yellowtail, function(x) {subset(x, year < 11)}) ### same for any perc
 
 # Removing the area from setdet, year >= 10
 
-sample_a_y10 <- map(setdet_yellowtail_sf, function(x) {subset(x, year >= 11)})
+sample_a_y10 <- map(setdet_yellowtail, function(x) {subset(x, year >= 11)})
 
 ### 30 percent setdet
 
@@ -254,13 +247,11 @@ blocked_samples <- map(sample_a_y10, function(x) {subset(x, !(x < 50 & x > -100 
 
 combined_samples <- map(seq_along(blocked_samples),function(i) {rbind(blocked_samples[[i]], samples10[[i]])})
 
-combined_samples_10 <- map(seq_along(blocked_samples),function(i) {rbind(blocked_samples[[i]], samples10[[i]])})
-
 ################### Updating survey lists
 
 survey_b30 <- survey_yellowtail
 for( i in seq_along(survey_b30)){
-  survey_b30[[i]]$setdet <- combined_samples_10[[i]]}
+  survey_b30[[i]]$setdet <- combined_samples[[i]]}
 
 ################# Design-based index
 
