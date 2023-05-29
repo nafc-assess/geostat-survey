@@ -27,10 +27,10 @@ source("./bootstrapping_fn.R")
 #############  Population simulations
 
 set.seed(1)
-survey_yellowtail <- furrr::future_map(seq_len(100), population_yellowtail, .options = furrr::furrr_options(seed = TRUE, packages = "SimSurvey"))
+survey_yellowtail <- furrr::future_map(seq_len(100), n_sims = 1, population_yellowtail, .options = furrr::furrr_options(seed = TRUE, packages = "SimSurvey"))
 gc()
 
-save(survey_yellowtail, file = "./Data/survey_yellowtail_base.Rdata")
+#save(survey_yellowtail, file = "./Data/survey_yellowtail_base.Rdata")
 
 ############# True abundance
 
@@ -57,13 +57,15 @@ for( i in seq_along(setdet_yellowtail)){
   setdet_yellowtail[[i]]$pop <- as.numeric(i)
 }
 
-save(setdet_yellowtail, file = "./Data/setdet_yellowtail_base.Rdata")
+setdet_yellowtail <- lapply(setdet_yellowtail, function(x) split(x, x$sim)) |> flatten()
+
+#save(setdet_yellowtail, file = "./Data/setdet_yellowtail_base.Rdata")
 
 ############# Bootstrapped index
 
-boot_index_yellowtail <- furrr::future_map_dfr(setdet_yellowtail, boot_wrapper, reps=1000, .options = furrr::furrr_options(seed = TRUE))|>
-  mutate(species = "Yellowtail-like", scenario = "Base", .progress = TRUE)
-gc()
+# boot_index_yellowtail <- furrr::future_map_dfr(setdet_yellowtail, boot_wrapper, reps=1000, .options = furrr::furrr_options(seed = TRUE))|>
+#   mutate(species = "Yellowtail-like", scenario = "Base", .progress = TRUE)
+# gc()
 
 ############# sdmTMB
 
@@ -142,6 +144,11 @@ setdet_r30_fn <- function(x, year_cutoff) {
   return(ab)
 }
 
+setdet_yellowtail <- map(survey_yellowtail, function(x) {pluck(x, 'setdet')})
+
+for( i in seq_along(setdet_yellowtail)){
+  setdet_yellowtail[[i]]$pop <- as.numeric(i)} ### sim level included
+
 set.seed(45)
 setdet_r30 <- map(setdet_yellowtail, setdet_r30_fn, year_cutoff = 11)
 
@@ -171,10 +178,12 @@ for( i in seq_along(setdet_yellowtail_r30)){
   setdet_yellowtail_r30[[i]]$pop <- as.numeric(i)
 }
 
+setdet_yellowtail_r30 <- lapply(setdet_yellowtail_r30, function(x) split(x, x$sim)) |> flatten()
+
 ############# Bootstrapped index
 
-boot_index_yellowtail_r30 <- furrr::future_map_dfr(setdet_yellowtail_r30, boot_wrapper, reps=1000, .options = furrr::furrr_options(seed = TRUE))|>
-  mutate(species = "Yellowtail-like", scenario = "Set reduction")
+# boot_index_yellowtail_r30 <- furrr::future_map_dfr(setdet_yellowtail_r30, boot_wrapper, reps=1000, .options = furrr::furrr_options(seed = TRUE))|>
+#   mutate(species = "Yellowtail-like", scenario = "Set reduction")
 
 #################  sdmTMB
 
@@ -215,87 +224,6 @@ sdm_DG_IID_depth_index_yellowtail_r30 <- furrr::future_map2_dfr(sdm_data_yellowt
 
 #############                           #############
 
-##  Survey scenarios
-
-library(data.table)
-library(raster)
-library(sp)
-library(sf)
-
-set.seed(1)
-
-# Making a grid with SimSurvey
-grid <- make_grid(x_range = c(-150, 150),
-                  y_range = c(-150, 150),
-                  res = c(10, 10),
-                  shelf_depth = 200,
-                  shelf_width = 100,
-                  depth_range = c(0, 1000),
-                  n_div = 1,
-                  strat_breaks = seq(0, 1000, by = 40),
-                  strat_splits = 2,
-                  method = "spline")
-
-# Converting from RasterBrick to SpatialPolygonsDataFrame
-
-polylist_grid <- lapply(as.list(grid), rasterToPolygons)
-
-poly_cell <- lapply(as.list(grid$cell), rasterToPolygons)
-
-# Combining all attributes to a single SpatialPolygonsDataFrame and convert it to sf
-
-grid_sf <- list(polylist_grid, makeUniqueIDs = T) |>
-  flatten()
-
-grid_sf <- do.call(cbind, grid_sf) |>
-  st_as_sf()
-
-# Creating a buffer area
-
-grid_sf_buffered <- function(x, fraction) {
-  width_half <- sqrt(st_area(st_union(x)) * fraction)/2
-  buffer <- st_buffer(st_geometry(st_union(x)), -width_half)
-  st_geometry(x)[!st_is_empty(buffer)] = buffer[!st_is_empty(buffer)]
-  return(st_union(x))
-}
-grid_sf_buffered_perc30 <- grid_sf_buffered(grid_sf, 0.3)
-
-### selecting a random point and creating the blocked area
-
-set.seed(30)
-
-block_poly_sf_fn <- function(x, fraction, buffer) {
-  grid_centroid <- st_centroid(x)
-  pointpool <- st_intersection(grid_centroid, buffer)
-
-  selected <-  pointpool |>
-    #group_by()|>
-    slice_sample(n = 1) |>
-    st_coordinates(selected)|>
-    data.table()
-
-  width_half <- sqrt(as.numeric(st_area(st_union(x))) * fraction)/2
-
-  yplus <- selected$Y + width_half
-  xplus <- selected$X + width_half
-  yminus <- selected$Y - width_half
-  xminus <- selected$X - width_half
-
-  x1 <- c(xminus,xplus,xplus,xminus,xminus) # a(SW), b(SE), c(NE), d(NW), a(SW) - closing the vertices
-  y1 <- c(yplus,yplus,yminus,yminus,yplus)
-
-  block <- sp::Polygon(cbind(x1,y1))
-  block <- sp::Polygons(list(block), ID = "1")
-  block_poly <- sp::SpatialPolygons(list(block))
-  block_poly_sf <- st_as_sf(block_poly)
-
-  return(block_poly_sf)
-}
-
-block_poly_sf_30 <- block_poly_sf_fn(grid_sf, 0.3, grid_sf_buffered_perc30)
-
-st_crs(grid_sf) = st_crs(block_poly_sf_30)
-
 ################# Blocking the setdets
 
 setdet_yellowtail <- map(survey_yellowtail, function(x) {pluck(x, 'setdet')})
@@ -321,10 +249,9 @@ sample_a_y10 <- map(setdet_yellowtail_sf, function(x) {subset(x, year >= 11)})
 
 ### 30 percent setdet
 
-blocked_samples <- map(seq_along(sample_a_y10), function(i) {
-  blocked_samples <- st_difference(sample_a_y10[[i]], block_poly_sf_30)|>
-    st_drop_geometry() |>
-    data.table()})
+blocked_samples <- map(sample_a_y10, function(x) {subset(x, !(x < 50 & x > -100 & y > -70 & y < 110))})
+
+combined_samples <- map(seq_along(blocked_samples),function(i) {rbind(blocked_samples[[i]], samples10[[i]])})
 
 combined_samples_10 <- map(seq_along(blocked_samples),function(i) {rbind(blocked_samples[[i]], samples10[[i]])})
 
@@ -351,6 +278,8 @@ setdet_yellowtail_b30 <- map(survey_b30, function(x) {pluck(x, 'setdet')})
 for(i in seq_along(setdet_yellowtail_b30)){
   setdet_yellowtail_b30[[i]]$pop <- as.numeric(i)
 }
+
+setdet_yellowtail_b30 <- lapply(setdet_yellowtail_b30, function(x) split(x, x$sim)) |> flatten()
 
 ############# Bootstrapped index
 
@@ -445,10 +374,12 @@ for(i in seq_along(setdet_yellowtail_SR)){
   setdet_yellowtail_SR[[i]]$pop <- as.numeric(i)
 }
 
+setdet_yellowtail_SR <- lapply(setdet_yellowtail_SR, function(x) split(x, x$sim)) |> flatten()
+
 ############# Bootstrapped index
 
-boot_index_yellowtail_SR <- furrr::future_map_dfr(setdet_yellowtail_SR, boot_wrapper, reps=1000, .options = furrr::furrr_options(seed = TRUE))|>
-  mutate(species = "Yellowtail-like", scenario = "Strata removal")
+# boot_index_yellowtail_SR <- furrr::future_map_dfr(setdet_yellowtail_SR, boot_wrapper, reps=1000, .options = furrr::furrr_options(seed = TRUE))|>
+#   mutate(species = "Yellowtail-like", scenario = "Strata removal")
 
 ################# sdmTMB
 
@@ -485,6 +416,7 @@ sdm_DG_IID_depth_index_yellowtail_SR <- furrr::future_map2_dfr(sdm_data_yellowta
                                                             formula = list(formula1, formula2), range_gt = 125, sigma_lt = 12.5, type = "DG + Depth", scenario = "Strata removal",
                                                             species = "Yellowtail-like", newdata = sdm_newdata_yellowtail, model_run_DG, .id = "model", .progress = TRUE)
 
+
 #############               #############
 
 # COMBINING ALL RESULTS
@@ -493,5 +425,3 @@ sdm_DG_IID_depth_index_yellowtail_SR <- furrr::future_map2_dfr(sdm_data_yellowta
 
 index_yellowtail_all_scenarios <- do.call(bind_rows, mget(ls(pattern = "index")))
 index_yellowtail_all_scenarios <- merge(index_yellowtail_all_scenarios, true_yellowtail, by=c("pop", "year", "species"))
-
-#save(index_yellowtail_all_scenarios, file = "./Data/index_yellowtail_all_scenarios.Rdata")

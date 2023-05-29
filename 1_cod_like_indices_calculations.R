@@ -12,24 +12,26 @@ library(purrr)
 library(ggpubr)
 plan(multisession)
 
+
 ### Load functions
 source("./pop_cod_fn.R")
 source("./model_run_fn.R")
 source("./bootstrapping_fn.R")
+source("./data_prep_fn.R")
 
 #############               #############
 
-            # BASE SCENARIO
+# Scenario 1: BASE SCENARIO #
 
 #############               #############
 
 #############  Population simulations
 
 set.seed(1)
-survey_cod <- furrr::future_map(seq_len(100), population_cod, .options = furrr::furrr_options(seed = TRUE, packages = "SimSurvey"))
+survey_cod <- furrr::future_map(seq_len(100), n_sim = 1, population_cod, .options = furrr::furrr_options(seed = TRUE, packages = "SimSurvey"))
 gc()
 
-save(survey_cod, file = "./Data/survey_cod_base.Rdata")
+#save(survey_cod, file = "./Data/survey_cod_base.Rdata")
 
 ############# True abundance
 
@@ -53,10 +55,11 @@ gc()
 setdet_cod <- map(survey_cod, function(x) {pluck(x, 'setdet')})
 
 for( i in seq_along(setdet_cod)){
-  setdet_cod[[i]]$pop <- as.numeric(i)
-}
+  setdet_cod[[i]]$pop <- as.numeric(i)}
 
-save(setdet_cod, file = "./Data/setdet_cod_base.Rdata")
+setdet_cod <- lapply(setdet_cod, function(x) split(x, x$sim)) |> flatten()
+
+#save(setdet_cod, file = "./Data/setdet_cod_base.Rdata")
 
 ############# Bootstrapped index
 
@@ -68,27 +71,9 @@ gc()
 
 ### Data prep
 
-sdm_data_fn <- function(x) {
-  dat <- as_tibble(x) |>
-    dplyr::select(x, y, set, sim, pop, year, count = n, tow_area, area = cell_area, depth) |>
-    mutate(offset = log(tow_area), density = count / tow_area)
-}
+sdm_data_cod <- furrr::future_map(setdet_cod, sdm_data_fn)
 
-sdm_data_cod <- furrr::future_map(setdet_cod, sdm_data_fn, .options = furrr::furrr_options(seed = TRUE))
-
-mesh_sdm_fn <- function(sdm_data){
-  mesh <- sdmTMB::make_mesh(sdm_data,
-                            xy_cols = c("x", "y"),
-                            cutoff = 45)
-}
-
-mesh_sdm_cod <- furrr::future_map(sdm_data_cod, mesh_sdm_fn, .options = furrr::furrr_options(seed = TRUE))
-
-sdm_newdata_fn <- function(survey, sdm_data){
-  newdata <- as_tibble(dplyr::select(survey$grid_xy, x, y, depth)) |> distinct()
-  newdata <- purrr::map_dfr(sort(unique(sdm_data$year)), ~ bind_cols(newdata, year = .)) |>
-    mutate(offset = 0, area = sdm_data$area[1])
-}
+mesh_sdm_cod <- furrr::future_map(sdm_data_cod, mesh_sdm_fn)
 
 sdm_newdata_cod <- sdm_newdata_fn(survey_cod[[1]], sdm_data_cod[[1]]) ### since all populations has the same prediction area, newdata is same for all.
 
@@ -120,11 +105,12 @@ sdm_DG_IID_index_cod <- furrr::future_map2_dfr(sdm_data_cod, mesh_sdm_cod,
 sdm_DG_IID_depth_index_cod <- furrr::future_map2_dfr(sdm_data_cod, mesh_sdm_cod,
                                                             formula = list(formula1, formula2), range_gt = 75, sigma_lt = 7.5, type = "DG + Depth", scenario = "Base",
                                                             species = "Cod-like", newdata = sdm_newdata_cod, model_run_DG, .id = "model", .progress = TRUE)
-#############                           #############
 
-# SET DENSITY REDUCTION
+#############               #############
 
-#############                           #############
+# Scenario 2: SET DENSITY REDUCTION #
+
+#############               #############
 
 # Subsetting the sets by year
 # 30 % effort reduction after Year 10
@@ -141,6 +127,11 @@ setdet_r30_fn <- function(x, year_cutoff) {
     as.data.table()
   return(ab)
 }
+
+setdet_cod <- map(survey_cod, function(x) {pluck(x, 'setdet')})
+
+for( i in seq_along(setdet_cod)){
+  setdet_cod[[i]]$pop <- as.numeric(i)}
 
 set.seed(45)
 setdet_r30 <- map(setdet_cod, setdet_r30_fn, year_cutoff = 11)
@@ -172,6 +163,8 @@ for( i in seq_along(setdet_cod_r30)){
   setdet_cod_r30[[i]]$pop <- as.numeric(i)
 }
 
+setdet_cod_r30 <- lapply(setdet_cod_r30, function(x) split(x, x$sim)) |> flatten()
+
 ############# Bootstrapped index
 
 boot_index_cod_r30 <- furrr::future_map_dfr(setdet_cod_r30, boot_wrapper, reps=1000, .options = furrr::furrr_options(seed = TRUE))|>
@@ -181,9 +174,9 @@ boot_index_cod_r30 <- furrr::future_map_dfr(setdet_cod_r30, boot_wrapper, reps=1
 
 ### Data prep
 
-sdm_data_cod_r30 <- furrr::future_map(setdet_cod_r30, sdm_data_fn, .options = furrr::furrr_options(seed = TRUE))
+sdm_data_cod_r30 <- furrr::future_map(setdet_cod_r30, sdm_data_fn)
 
-mesh_sdm_cod_r30  <- furrr::future_map(sdm_data_cod_r30, mesh_sdm_fn, .options = furrr::furrr_options(seed = TRUE))
+mesh_sdm_cod_r30  <- purrr::map(sdm_data_cod_r30, mesh_sdm_fn)
 
 ### IID + NB2
 sdm_NB2_IID_index_cod_r30 <- furrr::future_map2_dfr(sdm_data_cod_r30, mesh_sdm_cod_r30,
@@ -212,92 +205,11 @@ sdm_DG_IID_depth_index_cod_r30 <- furrr::future_map2_dfr(sdm_data_cod_r30, mesh_
 
 #############                           #############
 
-# AREA BLOCKED REDUCTION SCENARIO
+# Scenario 3: AREA BLOCKED REDUCTION SCENARIO
 
 #############                           #############
 
-##  Survey scenarios
 
-library(data.table)
-library(raster)
-library(sp)
-library(sf)
-
-set.seed(1)
-
-# Making a grid with SimSurvey
-grid <- make_grid(x_range = c(-150, 150),
-                  y_range = c(-150, 150),
-                  res = c(10, 10),
-                  shelf_depth = 200,
-                  shelf_width = 100,
-                  depth_range = c(0, 1000),
-                  n_div = 1,
-                  strat_breaks = seq(0, 1000, by = 40),
-                  strat_splits = 2,
-                  method = "spline")
-
-# Converting from RasterBrick to SpatialPolygonsDataFrame
-
-polylist_grid <- lapply(as.list(grid), rasterToPolygons)
-
-poly_cell <- lapply(as.list(grid$cell), rasterToPolygons)
-
-# Combining all attributes to a single SpatialPolygonsDataFrame and convert it to sf
-
-grid_sf <- list(polylist_grid, makeUniqueIDs = T) |>
-  flatten()
-
-grid_sf <- do.call(cbind, grid_sf) |>
-  st_as_sf()
-
-# Creating a buffer area
-
-grid_sf_buffered <- function(x, fraction) {
-  width_half <- sqrt(st_area(st_union(x)) * fraction)/2
-  buffer <- st_buffer(st_geometry(st_union(x)), -width_half)
-  st_geometry(x)[!st_is_empty(buffer)] = buffer[!st_is_empty(buffer)]
-  return(st_union(x))
-}
-grid_sf_buffered_perc30 <- grid_sf_buffered(grid_sf, 0.3)
-
-### selecting a random point and creating the blocked area
-
-set.seed(30)
-
-block_poly_sf_fn <- function(x, fraction, buffer) {
-  grid_centroid <- st_centroid(x)
-  pointpool <- st_intersection(grid_centroid, buffer)
-
-  selected <-  pointpool |>
-    #group_by()|>
-    slice_sample(n = 1) |>
-    st_coordinates(selected)|>
-    data.table()
-
-  width_half <- sqrt(as.numeric(st_area(st_union(x))) * fraction)/2
-
-  yplus <- selected$Y + width_half
-  xplus <- selected$X + width_half
-  yminus <- selected$Y - width_half
-  xminus <- selected$X - width_half
-
-  x1 <- c(xminus,xplus,xplus,xminus,xminus) # a(SW), b(SE), c(NE), d(NW), a(SW) - closing the vertices
-  y1 <- c(yplus,yplus,yminus,yminus,yplus)
-
-  block <- sp::Polygon(cbind(x1,y1))
-  block <- sp::Polygons(list(block), ID = "1")
-  block_poly <- sp::SpatialPolygons(list(block))
-  block_poly_sf <- st_as_sf(block_poly)
-
-  return(block_poly_sf)
-}
-
-block_poly_sf_30 <- block_poly_sf_fn(grid_sf, 0.3, grid_sf_buffered_perc30)
-
-st_crs(grid_sf) = st_crs(block_poly_sf_30)
-
-#save(block_poly_sf_30, file = "./Data/block_poly_sf_30.Rdata")
 
 ################# Blocking the setdets
 
@@ -307,35 +219,25 @@ for( i in seq_along(setdet_cod)){
   setdet_cod[[i]]$pop <- as.numeric(i)
 }
 
-# Converting the setdet to a SpatialPointsDataFrame and then to an sf object
-
-for (i in 1:length(setdet_cod)){
-  coordinates(setdet_cod[[i]]) = cbind(setdet_cod[[i]]$x, setdet_cod[[i]]$y)}
-
-setdet_cod_sf <- map(setdet_cod, function(x) {st_as_sf(x)})
-
 # Getting all samples before year 10
 
-samples10 <- map(setdet_cod_sf, function(x) {subset(x, year < 11) |> st_drop_geometry() |> data.table()}) ### same for any perc
+samples10 <- map(setdet_cod, function(x) {subset(x, year < 11)}) ### samples before Year 11
 
 # Removing the area from setdet, year >= 10
 
-sample_a_y10 <- map(setdet_cod_sf, function(x) {subset(x, year >= 11)})
+sample_a_y10 <- map(setdet_cod, function(x) {subset(x, year >= 11)})### samples after Year 11
 
-### 30 percent setdet
+### Blocking the mpa coordinates
 
-blocked_samples <- map(seq_along(sample_a_y10), function(i) {
-  blocked_samples <- st_difference(sample_a_y10[[i]], block_poly_sf_30)|>
-    st_drop_geometry() |>
-    data.table()})
+blocked_samples <- map(sample_a_y10, function(x) {subset(x, !(x < 50 & x > -100 & y > -70 & y < 110))})
 
-combined_samples_10 <- map(seq_along(blocked_samples),function(i) {rbind(blocked_samples[[i]], samples10[[i]])})
+combined_samples <- map(seq_along(blocked_samples),function(i) {rbind(blocked_samples[[i]], samples10[[i]])})
 
 ################### Updating survey lists
 
 survey_b30 <- survey_cod
 for( i in seq_along(survey_b30)){
-  survey_b30[[i]]$setdet <- combined_samples_10[[i]]}
+  survey_b30[[i]]$setdet <- combined_samples[[i]]}
 
 ################# Design-based index
 
@@ -355,6 +257,8 @@ for(i in seq_along(setdet_cod_b30)){
   setdet_cod_b30[[i]]$pop <- as.numeric(i)
 }
 
+setdet_cod_b30 <- lapply(setdet_cod_b30, function(x) split(x, x$sim)) |> flatten()
+
 ############# Bootstrapped index
 
 boot_index_cod_b30 <- furrr::future_map_dfr(setdet_cod_b30, boot_wrapper, reps=1000, .options = furrr::furrr_options(seed = TRUE))|>
@@ -364,9 +268,12 @@ boot_index_cod_b30 <- furrr::future_map_dfr(setdet_cod_b30, boot_wrapper, reps=1
 
 ### Data prep
 
-sdm_data_cod_b30 <- furrr::future_map(setdet_cod_b30, sdm_data_fn, .options = furrr::furrr_options(seed = TRUE))
+sdm_data_cod_b30 <- furrr::future_map(setdet_cod_b30, sdm_data_fn)
 
-mesh_sdm_cod_b30  <- furrr::future_map(sdm_data_cod_b30, mesh_sdm_fn, .options = furrr::furrr_options(seed = TRUE))
+ #save(sdm_data_cod_b30, file = "./Revision/sdm_data_cod_b30.Rdata")
+
+mesh_sdm_cod_b30  <- purrr::map(sdm_data_cod_b30, mesh_sdm_fn)
+
 
 ### IID + NB2
 sdm_NB2_IID_index_cod_b30 <- furrr::future_map2_dfr(sdm_data_cod_b30, mesh_sdm_cod_b30,
@@ -394,7 +301,7 @@ sdm_DG_IID_depth_index_cod_b30 <- furrr::future_map2_dfr(sdm_data_cod_b30, mesh_
                                                             species = "Cod-like", newdata = sdm_newdata_cod, model_run_DG, .id = "model", .progress = TRUE)
 #############               #############
 
-# STRATA REMOVAL SCENARIO
+# Scenario 4: STRATA REMOVAL SCENARIO
 
 #############               #############
 
@@ -424,11 +331,6 @@ survey_SR <- survey_cod
 for(i in seq_along(survey_SR)){
   survey_SR[[i]]$setdet <- combined_samples_10[[i]]}
 
-setdet_cod_SR <- map(survey_SR, function(x) {pluck(x, 'setdet')})
-for(i in seq_along(setdet_cod_SR)){
-  setdet_cod_SR[[i]]$pop <- as.numeric(i)
-}
-
 ################# Design-based index
 
 design_index_SR <- map_df(seq_along(survey_SR),function(i){
@@ -447,6 +349,8 @@ for(i in seq_along(setdet_cod_SR)){
   setdet_cod_SR[[i]]$pop <- as.numeric(i)
 }
 
+setdet_cod_SR <- lapply(setdet_cod_SR, function(x) split(x, x$sim)) |> flatten()
+
 ############# Bootstrapped index
 
 boot_index_cod_SR <- furrr::future_map_dfr(setdet_cod_SR, boot_wrapper, reps=1000, .options = furrr::furrr_options(seed = TRUE))|>
@@ -456,9 +360,9 @@ boot_index_cod_SR <- furrr::future_map_dfr(setdet_cod_SR, boot_wrapper, reps=100
 
 ### Data prep
 
-sdm_data_cod_SR <- furrr::future_map(setdet_cod_SR, sdm_data_fn, .options = furrr::furrr_options(seed = TRUE))
+sdm_data_cod_SR <- furrr::future_map(setdet_cod_SR, sdm_data_fn)
 
-mesh_sdm_cod_SR  <- furrr::future_map(sdm_data_cod_SR, mesh_sdm_fn, .options = furrr::furrr_options(seed = TRUE))
+mesh_sdm_cod_SR  <- furrr::future_map(sdm_data_cod_SR, mesh_sdm_fn)
 
 ### IID + NB2
 sdm_NB2_IID_index_cod_SR  <- furrr::future_map2_dfr(sdm_data_cod_SR, mesh_sdm_cod_SR,
@@ -499,4 +403,3 @@ sdm_DG_IID_depth_index_cod_SR <- furrr::future_map2_dfr(sdm_data_cod_SR, mesh_sd
 index_cod_all_scenarios <- do.call(bind_rows, mget(ls(pattern = "index")))
 index_cod_all_scenarios <- merge(index_cod_all_scenarios, true_cod, by=c("pop", "year", "species"))
 
-#save(index_cod_all_scenarios, file = "./Data/index_cod_all_scenarios.Rdata")
