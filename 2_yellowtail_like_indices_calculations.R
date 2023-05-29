@@ -16,6 +16,7 @@ plan(multisession)
 source("./pop_yellowtail_fn.R")
 source("./model_run_fn.R")
 source("./bootstrapping_fn.R")
+source("./data_prep_fn.R")
 
 #############               #############
 
