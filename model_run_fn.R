@@ -89,6 +89,7 @@ model_run_NB <- function(data, mesh, formula, range_gt, sigma_lt, type, scenario
 #
 #' @return: population index value (N) in each year, convergence report, AIC value for each population and scenarios
 model_run_TW <- function(data, mesh, formula, range_gt, sigma_lt, type, scenario, species, newdata){
+  matern = pc_matern(range_gt = range_gt, sigma_lt = sigma_lt)
 
   fit <- try({sdmTMB(formula,
                      data = data,
@@ -99,8 +100,8 @@ model_run_TW <- function(data, mesh, formula, range_gt, sigma_lt, type, scenario
                      spatial = TRUE,
                      spatiotemporal = "IID",
                      priors = sdmTMBpriors(
-                       matern_s = pc_matern(range_gt = range_gt, sigma_lt = sigma_lt),
-                       matern_st = pc_matern(range_gt = range_gt, sigma_lt = sigma_lt)),
+                       matern_s = matern,
+                       matern_st = matern),
                      share_range = FALSE,
                      control = sdmTMBcontrol(newton_loops = 1L)
   )})
