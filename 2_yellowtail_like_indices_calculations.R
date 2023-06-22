@@ -18,7 +18,7 @@ source("./model_run_fn.R")
 source("./bootstrapping_fn.R")
 source("./data_prep_fn.R")
 
-#############               #############
+############               #############
 
             # BASE SCENARIO
 
@@ -64,35 +64,21 @@ setdet_yellowtail <- lapply(setdet_yellowtail, function(x) split(x, x$sim)) |> f
 
 ############# Bootstrapped index
 
-# boot_index_yellowtail <- furrr::future_map_dfr(setdet_yellowtail, boot_wrapper, reps=1000, .options = furrr::furrr_options(seed = TRUE))|>
-#   mutate(species = "Yellowtail-like", scenario = "Base", .progress = TRUE)
+tic()
+
+boot_index_yellowtail <- furrr::future_map_dfr(setdet_yellowtail, boot_wrapper, reps=1000, .options = furrr::furrr_options(seed = TRUE))|>
+  mutate(species = "Yellowtail-like", scenario = "Base", .progress = TRUE)
 # gc()
+
+toc()
 
 ############# sdmTMB
 
 ### Data prep
 
-sdm_data_fn <- function(x) {
-  dat <- as_tibble(x) |>
-    dplyr::select(x, y, set, sim, pop, year, count = n, tow_area, area = cell_area, depth) |>
-    mutate(offset = log(tow_area), density = count / tow_area)
-}
+sdm_data_yellowtail <- furrr::future_map(setdet_yellowtail, sdm_data_fn)
 
-sdm_data_yellowtail <- furrr::future_map(setdet_yellowtail, sdm_data_fn, .options = furrr::furrr_options(seed = TRUE))
-
-mesh_sdm_fn <- function(sdm_data){
-  mesh <- sdmTMB::make_mesh(sdm_data,
-                            xy_cols = c("x", "y"),
-                            cutoff = 45)
-}
-
-mesh_sdm_yellowtail <- furrr::future_map(sdm_data_yellowtail, mesh_sdm_fn, .options = furrr::furrr_options(seed = TRUE))
-
-sdm_newdata_fn <- function(survey, sdm_data){
-  newdata <- as_tibble(dplyr::select(survey$grid_xy, x, y, depth)) |> distinct()
-  newdata <- purrr::map_dfr(sort(unique(sdm_data$year)), ~ bind_cols(newdata, year = .)) |>
-    mutate(offset = 0, area = sdm_data$area[1])
-}
+mesh_sdm_yellowtail <- furrr::future_map(sdm_data_yellowtail, mesh_sdm_fn)
 
 sdm_newdata_yellowtail <- sdm_newdata_fn(survey_yellowtail[[1]], sdm_data_yellowtail[[1]]) ### since all populations has the same prediction area, newdata is same for all.
 
@@ -183,16 +169,20 @@ setdet_yellowtail_r30 <- lapply(setdet_yellowtail_r30, function(x) split(x, x$si
 
 ############# Bootstrapped index
 
-# boot_index_yellowtail_r30 <- furrr::future_map_dfr(setdet_yellowtail_r30, boot_wrapper, reps=1000, .options = furrr::furrr_options(seed = TRUE))|>
-#   mutate(species = "Yellowtail-like", scenario = "Set reduction")
+boot_index_yellowtail_r30 <- furrr::future_map_dfr(setdet_yellowtail_r30, boot_wrapper, reps=1000, .options = furrr::furrr_options(seed = TRUE))|>
+  mutate(species = "Yellowtail-like", scenario = "Set reduction")
+
+#1728.35 sec elapsed
 
 #################  sdmTMB
 
 ### Data prep
 
-sdm_data_yellowtail_r30 <- furrr::future_map(setdet_yellowtail_r30, sdm_data_fn, .options = furrr::furrr_options(seed = TRUE))
+sdm_data_yellowtail_r30 <- furrr::future_map(setdet_yellowtail_r30, sdm_data_fn)
 
-mesh_sdm_yellowtail_r30  <- furrr::future_map(sdm_data_yellowtail_r30, mesh_sdm_fn, .options = furrr::furrr_options(seed = TRUE))
+mesh_sdm_yellowtail_r30  <-furrr::future_map(sdm_data_yellowtail_r30, mesh_sdm_fn)
+
+#mesh_sdm_yellowtail_r30  <- map(sdm_data_yellowtail_r30, mesh_sdm_fn)
 
 ### IID + NB2
 sdm_NB2_IID_index_yellowtail_r30 <- furrr::future_map2_dfr(sdm_data_yellowtail_r30, mesh_sdm_yellowtail_r30,
@@ -275,41 +265,49 @@ setdet_yellowtail_b30 <- lapply(setdet_yellowtail_b30, function(x) split(x, x$si
 
 ############# Bootstrapped index
 
-boot_index_yellowtail_b30 <- furrr::future_map_dfr(setdet_yellowtail_b30, boot_wrapper, reps=1000, .options = furrr::furrr_options(seed = TRUE))|>
-  mutate(species = "Yellowtail-like", scenario = "Area blocked reduction")
+# boot_index_yellowtail_b30 <- furrr::future_map_dfr(setdet_yellowtail_b30, boot_wrapper, reps=1000, .options = furrr::furrr_options(seed = TRUE))|>
+#   mutate(species = "Yellowtail-like", scenario = "Area blocked reduction")
 
 ################# sdmTMB
 
 ### Data prep
 
-sdm_data_yellowtail_b30 <- furrr::future_map(setdet_yellowtail_b30, sdm_data_fn, .options = furrr::furrr_options(seed = TRUE))
+sdm_data_yellowtail_b30 <- furrr::future_map(setdet_yellowtail_b30, sdm_data_fn)
 
-mesh_sdm_yellowtail_b30  <- furrr::future_map(sdm_data_yellowtail_b30, mesh_sdm_fn, .options = furrr::furrr_options(seed = TRUE))
+mesh_sdm_yellowtail_b30  <- map(sdm_data_yellowtail_b30, mesh_sdm_fn)
+
+#load("~/GeoStat - Rprojects/geostat-survey/data/sdm_newdata_yellowtail.Rdata")
 
 ### IID + NB2
-sdm_NB2_IID_index_yellowtail_b30 <- furrr::future_map2_dfr(sdm_data_yellowtail_b30, mesh_sdm_yellowtail_b30,
-                                                       formula = formula1, range_gt = 125, sigma_lt = 12.5, type = "NB", scenario = "Area blocked reduction",
-                                                       species = "Yellowtail-like", newdata = sdm_newdata_yellowtail, model_run_NB, .id = "model", .progress = TRUE)
+sdm_NB2_IID_index_yellowtail_b30  <- furrr::future_map2_dfr(sdm_data_yellowtail_b30, mesh_sdm_yellowtail_b30,
+                                                           formula = formula1, range_gt = 125, sigma_lt = 12.5, type = "NB", scenario = "Strata removal",
+                                                           species = "Yellowtail-like", newdata = sdm_newdata_yellowtail, model_run_NB, .id = "model", .progress = TRUE)
 ### IID + NB2 + depth
-sdm_NB2_IID_depth_index_yellowtail_b30 <- furrr::future_map2_dfr(sdm_data_yellowtail_b30, mesh_sdm_yellowtail_b30,
-                                                             formula = formula2, range_gt = 125, sigma_lt = 12.5, type = "NB + Depth", scenario = "Area blocked reduction",
-                                                             species = "Yellowtail-like", newdata = sdm_newdata_yellowtail, model_run_NB, .id = "model", .progress = TRUE)
+sdm_NB2_IID_depth_index_yellowtail_b30  <- furrr::future_map2_dfr(sdm_data_yellowtail_b30, mesh_sdm_yellowtail_b30,
+                                                                 formula = formula2, range_gt = 125, sigma_lt = 12.5, type = "NB + Depth", scenario = "Strata removal",
+                                                                 species = "Yellowtail-like", newdata = sdm_newdata_yellowtail, model_run_NB, .id = "model", .progress = TRUE)
 ### IID + TW
-sdm_TW_IID_index_yellowtail_b30 <- furrr::future_map2_dfr(sdm_data_yellowtail_b30, mesh_sdm_yellowtail_b30,
-                                                      formula = formula1, range_gt = 125, sigma_lt = 12.5, type = "TW", scenario = "Area blocked reduction",
-                                                      species = "Yellowtail-like", newdata = sdm_newdata_yellowtail, model_run_TW, .id = "model", .progress = TRUE)
+sdm_TW_IID_index_yellowtail_b30  <- furrr::future_map2_dfr(sdm_data_yellowtail_b30, mesh_sdm_yellowtail_b30,
+                                                          formula = formula1, range_gt = 125, sigma_lt = 12.5, type = "TW", scenario = "Strata removal",
+                                                          species = "Yellowtail-like", newdata = sdm_newdata_yellowtail, model_run_TW, .id = "model", .progress = TRUE)
 ### IID + TW + depth
-sdm_TW_IID_depth_index_yellowtail_b30 <- furrr::future_map2_dfr(sdm_data_yellowtail_b30, mesh_sdm_yellowtail_b30,
-                                                            formula = formula2, range_gt = 125, sigma_lt = 12.5, type = "TW + Depth", scenario = "Area blocked reduction",
-                                                            species = "Yellowtail-like", newdata = sdm_newdata_yellowtail, model_run_TW, .id = "model", .progress = TRUE)
+sdm_TW_IID_depth_index_yellowtail_b30  <- furrr::future_map2_dfr(sdm_data_yellowtail_b30, mesh_sdm_yellowtail_b30,
+                                                                formula = formula2, range_gt = 125, sigma_lt = 12.5, type = "TW + Depth", scenario = "Strata removal",
+                                                                species = "Yellowtail-like", newdata = sdm_newdata_yellowtail, model_run_TW, .id = "model", .progress = TRUE)
 ### IID + DG
 sdm_DG_IID_index_yellowtail_b30 <- furrr::future_map2_dfr(sdm_data_yellowtail_b30, mesh_sdm_yellowtail_b30,
-                                                      formula = formula1, range_gt = 125, sigma_lt = 12.5, type = "DG", scenario = "Area blocked reduction",
-                                                      species = "Yellowtail-like", newdata = sdm_newdata_yellowtail, model_run_DG, .id = "model", .progress = TRUE)
+                                                         formula = formula1, range_gt = 125, sigma_lt = 12.5, type = "DG", scenario = "Strata removal",
+                                                         species = "Yellowtail-like", newdata = sdm_newdata_yellowtail, model_run_DG, .id = "model", .progress = TRUE)
+
 #### IID + DG + depth
 sdm_DG_IID_depth_index_yellowtail_b30 <- furrr::future_map2_dfr(sdm_data_yellowtail_b30, mesh_sdm_yellowtail_b30,
-                                                            formula = list(formula1, formula2), range_gt = 125, sigma_lt = 12.5, type = "DG + Depth", scenario = "Area blocked reduction",
-                                                            species = "Yellowtail-like", newdata = sdm_newdata_yellowtail, model_run_DG, .id = "model", .progress = TRUE)
+                                                               formula = list(formula1, formula2), range_gt = 125, sigma_lt = 12.5, type = "DG + Depth", scenario = "Strata removal",
+                                                               species = "Yellowtail-like", newdata = sdm_newdata_yellowtail, model_run_DG, .id = "model", .progress = TRUE)
+
+
+#############
+
+
 #############               #############
 
         # STRATA REMOVAL SCENARIO
@@ -377,9 +375,9 @@ setdet_yellowtail_SR <- lapply(setdet_yellowtail_SR, function(x) split(x, x$sim)
 
 ### Data prep
 
-sdm_data_yellowtail_SR <- furrr::future_map(setdet_yellowtail_SR, sdm_data_fn, .options = furrr::furrr_options(seed = TRUE))
+sdm_data_yellowtail_SR <- furrr::future_map(setdet_yellowtail_SR, sdm_data_fn)
 
-mesh_sdm_yellowtail_SR  <- furrr::future_map(sdm_data_yellowtail_SR, mesh_sdm_fn, .options = furrr::furrr_options(seed = TRUE))
+mesh_sdm_yellowtail_SR  <- furrr::future_map(sdm_data_yellowtail_SR, mesh_sdm_fn)
 
 
 ### IID + NB2
@@ -415,5 +413,18 @@ sdm_DG_IID_depth_index_yellowtail_SR <- furrr::future_map2_dfr(sdm_data_yellowta
 
 #############               #############
 
-index_yellowtail_all_scenarios <- do.call(bind_rows, mget(ls(pattern = "index")))
-index_yellowtail_all_scenarios <- merge(index_yellowtail_all_scenarios, true_yellowtail, by=c("pop", "year", "species"))
+# index_yellowtail_all_scenarios_b30 <- do.call(bind_rows, mget(ls(pattern = "index")))
+# index_yellowtail_all_scenarios_b30 <- merge(index_yellowtail_all_scenarios_b30, true_yellowtail, by=c("pop", "year", "species"))
+#
+# load("~/GeoStat - Rprojects/geostat-survey/bin/Version0_data/index_yellowtail_all_scenarios.Rdata")
+#
+# ## changing the MPA scenario
+# index_yellowtail_all_scenarios <- index_yellowtail_all_scenarios[!index_yellowtail_all_scenarios$scenario ==  "30% area blocked",]
+# index_yellowtail_all_scenarios <- bind_rows(index_yellowtail_all_scenarios, index_yellowtail_all_scenarios_b30)
+# index_yellowtail_all_scenarios[index_yellowtail_all_scenarios$scenario == "30% set reduction", ]$scenario <- "Set reduction"
+#
+# index_yellowtail_all_scenarios$.progress <- NULL
+# save(index_yellowtail_all_scenarios, file = "./data/index_yellowtail_all_scenarios.Rdata")
+
+
+
