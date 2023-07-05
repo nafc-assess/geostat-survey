@@ -49,3 +49,19 @@ design_index_yellowtail <- map_df(seq_along(survey_yellowtail),function(i){
     dplyr:: select(sim, year, N, type, lwr, upr, scenario) |>
     mutate(pop = as.numeric(i), species = "Yellowtail-like")})
 gc()
+
+
+
+design_index_yellowtail <- merge(design_index_yellowtail, true_yellowtail, by=c("pop", "year", "species"))
+
+design_r <-
+  design_index_yellowtail |>
+  filter(year > 10) |>
+  ungroup() |>
+  group_by(pop, type, scenario, species) |>
+  summarise(MRE = mean((N - true) / true),
+            ME = mean(N - true),
+            difflog = mean(log(N) - log(true)),
+            RMSE = sqrt(mean((log(N) - log(true))^2)))
+
+hist(design_r$difflog)
