@@ -3,8 +3,8 @@
 #'
 #' @param iter: # of simulation
 #'
-population_yellowtail <- function(iter, n_sims) {
-  set.seed(iter * 1)
+population_yellowtail <- function(iter, n_sims, set_den = 2/1000) {
+  # set.seed(iter * 1)
   pop <- SimSurvey::sim_abundance(ages = 1:10,
                                   years = 1:20,
 
@@ -48,7 +48,7 @@ population_yellowtail <- function(iter, n_sims) {
                           resample_cells = FALSE,
                           binom_error = TRUE,
                           min_sets = 2,
-                          set_den = 2/1000)
+                          set_den = set_den)
 }
 
 #### Recovery Scenario

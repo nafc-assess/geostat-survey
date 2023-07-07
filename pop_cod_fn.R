@@ -3,8 +3,8 @@
 #'
 #' @param iter: # of simulation
 #'
-population_cod <- function(iter, n_sims) {
-  set.seed(iter * 35)
+population_cod <- function(iter, n_sims, set_den = 2/1000) {
+  # set.seed(iter * 35)
   pop <- sim_abundance(ages = 1:20,
                        years = 1:20,
                        Z = sim_Z(log_mean = log(0.3), # changed this from 0.4 to 0.3
@@ -46,14 +46,14 @@ population_cod <- function(iter, n_sims) {
 
                                 depth_par = sim_parabola(mu = log(160),
                                                          sigma = 0.5,
-                                                         log_space = FALSE, plot=FALSE)) |>
+                                                         log_space = TRUE, plot=FALSE)) |>
     SimSurvey::sim_survey(n_sims = n_sims,
                           q = sim_logistic(k = 2, x0 = 3, plot = FALSE),
                           trawl_dim = c(3, 0.02),
                           resample_cells = FALSE,
                           binom_error = TRUE,
                           min_sets = 2,
-                          set_den = 2/1000)
+                          set_den = set_den)
 }
 
 
