@@ -53,7 +53,7 @@ population_cod <- function(iter, n_sims) {
                           resample_cells = FALSE,
                           binom_error = TRUE,
                           min_sets = 2,
-                          set_den = set_den = 2/1000)
+                          set_den = 2/1000)
 }
 
 
