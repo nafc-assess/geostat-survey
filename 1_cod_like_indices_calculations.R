@@ -64,7 +64,7 @@ setdet_cod <- lapply(setdet_cod, function(x) split(x, x$sim)) |> flatten()
 ############# Bootstrapped index
 
 boot_index_cod <- furrr::future_map_dfr(setdet_cod, boot_wrapper, reps=1000, .options = furrr::furrr_options(seed = TRUE))|>
-  mutate(species = "Cod-like", scenario = "Base", .progress = TRUE)
+  mutate(species = "Cod-like", scenario = "Base")
 gc()
 
 ############# sdmTMB
@@ -469,7 +469,7 @@ setdet_cod_rec <- lapply(setdet_cod_rec, function(x) split(x, x$sim)) |> flatten
 ############# Bootstrapped index
 
 boot_index_cod_rec <- furrr::future_map_dfr(setdet_cod_rec, boot_wrapper, reps=1000, .options = furrr::furrr_options(seed = TRUE))|>
-  mutate(species = "Cod-like", scenario = "Recovery", .progress = TRUE)
+  mutate(species = "Cod-like", scenario = "Recovery")
 gc()
 
 ############# sdmTMB
@@ -584,7 +584,7 @@ setdet_cod_so <- lapply(setdet_cod_so, function(x) split(x, x$sim)) |> flatten()
 ############# Bootstrapped index
 
 boot_index_cod_so <- furrr::future_map_dfr(setdet_cod_so, boot_wrapper, reps=1000, .options = furrr::furrr_options(seed = TRUE))|>
-  mutate(species = "Cod-like", scenario = "Recovery + Spillover", .progress = TRUE)
+  mutate(species = "Cod-like", scenario = "Recovery + Spillover")
 gc()
 
 ############# sdmTMB
@@ -630,8 +630,7 @@ sdm_DG_IID_depth_index_cod_so <- furrr::future_map2_dfr(sdm_data_cod_so, mesh_sd
 
 #############                           #############
 
-# index_cod_all_scenarios <- do.call(bind_rows, mget(ls(pattern = "index")))
-# index_cod_all_scenarios <- merge(index_cod_all_scenarios, true_cod, by=c("pop", "year", "species"))
-# index_cod_all_scenarios$.progress <- NULL
-# save(index_cod_all_scenarios, file = "./data/index_cod_all_scenarios.Rdata")
+index_cod_all_scenarios <- do.call(bind_rows, mget(ls(pattern = "index")))
+index_cod_all_scenarios <- merge(index_cod_all_scenarios, true_cod, by=c("pop", "year", "species"))
+save(index_cod_all_scenarios, file = "./data2/index_cod_all_scenarios.Rdata")
 
