@@ -11,6 +11,7 @@ library(dplyr)
 library(purrr)
 library(ggpubr)
 plan(multisession)
+# plan(multisession, workers = 4L)
 
 ### Load functions
 source("./pop_yellowtail_fn.R")
@@ -24,11 +25,12 @@ source("./data_prep_fn.R")
 
 #############               #############
 
+message("BASE SCENARIO")
 
 #############  Population simulations
 
 set.seed(1)
-survey_yellowtail <- furrr::future_map(seq_len(100), n_sims = 1, population_yellowtail, .options = furrr::furrr_options(seed = TRUE, packages = "SimSurvey"))
+survey_yellowtail <- furrr::future_map(seq_len(100L), n_sims = 1, population_yellowtail, .options = furrr::furrr_options(seed = TRUE, packages = "SimSurvey"))
 gc()
 
 #save(survey_yellowtail, file = "./data/survey_yellowtail_base.Rdata")
@@ -110,6 +112,7 @@ sdm_DG_IID_depth_index_yellowtail <- furrr::future_map2_dfr(sdm_data_yellowtail,
 
 #############                          #############
 
+message("SET DENSITY REDUCTION SCENARIO")
 # Subsetting the sets by year
 # 30 % effort reduction after Year 10
 
@@ -207,6 +210,8 @@ sdm_DG_IID_depth_index_yellowtail_r30 <- furrr::future_map2_dfr(sdm_data_yellowt
         # STRATA REMOVAL SCENARIO
 
 #############               #############
+
+message("STRATA REMOVAL SCENARIO")
 
 setdet_yellowtail <- map(survey_yellowtail, function(x) {pluck(x, 'setdet')})
 
@@ -307,6 +312,8 @@ sdm_DG_IID_depth_index_yellowtail_SR <- furrr::future_map2_dfr(sdm_data_yellowta
 
 #############                           #############
 
+message("AREA BLOCKED REDUCTION SCENARIO")
+
 ################# Blocking the setdets
 
 setdet_yellowtail <- map(survey_yellowtail, function(x) {pluck(x, 'setdet')})
@@ -401,6 +408,8 @@ sdm_DG_IID_depth_index_yellowtail_b30 <- furrr::future_map2_dfr(sdm_data_yellowt
 # Scenario 5: RECOVERY
 
 #############                           #############
+
+message("RECOVERY SCENARIO")
 
 #############  Population simulations
 
@@ -510,6 +519,8 @@ sdm_DG_IID_depth_index_yellowtail_rec <- furrr::future_map2_dfr(sdm_data_yellowt
 # Scenario 6: RECOVERY WITH SPILLOVER EFFECT
 
 #############                           #############
+
+message("RECOVERY WITH SPILLOVER EFFECT")
 
 #############  Population simulations
 
