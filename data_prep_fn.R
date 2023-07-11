@@ -7,7 +7,7 @@ sdm_data_fn <- function(x) {
 mesh_sdm_fn <- function(sdm_data){
   mesh <- sdmTMB::make_mesh(sdm_data,
                             xy_cols = c("x", "y"),
-                            cutoff = 45)
+                            cutoff = 50)
 }
 
 sdm_newdata_fn <- function(survey, sdm_data){
