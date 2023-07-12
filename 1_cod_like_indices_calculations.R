@@ -64,7 +64,7 @@ for( i in seq_along(setdet_cod)){
 
 setdet_cod <- lapply(setdet_cod, function(x) split(x, x$sim)) |> flatten()
 
-#save(setdet_cod, file = "./data2/setdet_cod_base.Rdata")
+#save(setdet_cod, file = "./data/setdet_cod_base.Rdata")
 
 ############# Bootstrapped index
 
@@ -170,7 +170,7 @@ for( i in seq_along(setdet_cod_r30)){
 
 setdet_cod_r30 <- lapply(setdet_cod_r30, function(x) split(x, x$sim)) |> flatten()
 
-#save(setdet_cod_r30, file = "./data2/setdet_cod_r30.Rdata")
+#save(setdet_cod_r30, file = "./data/setdet_cod_r30.Rdata")
 ############# Bootstrapped index
 
 boot_index_cod_r30 <- furrr::future_map_dfr(setdet_cod_r30, boot_wrapper, reps=1000, .options = furrr::furrr_options(seed = TRUE))|>
@@ -261,7 +261,7 @@ for(i in seq_along(setdet_cod_SR)){
 
 setdet_cod_SR <- lapply(setdet_cod_SR, function(x) split(x, x$sim)) |> flatten()
 
-#save(setdet_cod_SR, file = "./data2/setdet_cod_SR.Rdata")
+#save(setdet_cod_SR, file = "./data/setdet_cod_SR.Rdata")
 
 ############# Bootstrapped index
 
@@ -362,7 +362,7 @@ for(i in seq_along(setdet_cod_b30)){
 
 setdet_cod_b30 <- lapply(setdet_cod_b30, function(x) split(x, x$sim)) |> flatten()
 
-#save(setdet_cod_b30, file = "./data2/setdet_cod_b30.Rdata")
+#save(setdet_cod_b30, file = "./data/setdet_cod_b30.Rdata")
 
 ############# Bootstrapped index
 
@@ -471,7 +471,7 @@ for(i in seq_along(setdet_cod_rec)){
 
 setdet_cod_rec <- lapply(setdet_cod_rec, function(x) split(x, x$sim)) |> flatten()
 
-#save(setdet_cod_rec, file = "./data2/setdet_cod_rec.Rdata")
+#save(setdet_cod_rec, file = "./data/setdet_cod_rec.Rdata")
 
 ############# Bootstrapped index
 
@@ -586,7 +586,7 @@ for( i in seq_along(setdet_cod_so)){
 
 setdet_cod_so <- lapply(setdet_cod_so, function(x) split(x, x$sim)) |> flatten()
 
-save(setdet_cod_so, file = "./data2/setdet_cod_so.Rdata")
+#save(setdet_cod_so, file = "./data/setdet_cod_so.Rdata")
 
 ############# Bootstrapped index
 
@@ -639,6 +639,6 @@ sdm_DG_IID_depth_index_cod_so <- furrr::future_map2_dfr(sdm_data_cod_so, mesh_sd
 
 index_cod_all_scenarios <- do.call(bind_rows, mget(ls(pattern = "index")))
 index_cod_all_scenarios <- merge(index_cod_all_scenarios, true_cod, by=c("pop", "year", "species"))
-save(index_cod_all_scenarios, file = "./data2/index_cod_all_scenarios.Rdata")
+save(index_cod_all_scenarios, file = "./data/index_cod_all_scenarios.Rdata")
 
 Sys.time()
