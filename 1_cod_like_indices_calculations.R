@@ -19,6 +19,11 @@ source("./model_run_fn.R")
 source("./bootstrapping_fn.R")
 source("./data_prep_fn.R")
 
+
+# set to 1 so data.table doesn't spawn forks on forks
+# usethis::edit_r_environ()
+Sys.getenv("OMP_THREAD_LIMIT")
+
 #############               #############
 
 # Scenario 1: BASE SCENARIO #
@@ -59,7 +64,7 @@ for( i in seq_along(setdet_cod)){
 
 setdet_cod <- lapply(setdet_cod, function(x) split(x, x$sim)) |> flatten()
 
-#save(setdet_cod, file = "./data/setdet_cod_base.Rdata")
+#save(setdet_cod, file = "./data2/setdet_cod_base.Rdata")
 
 ############# Bootstrapped index
 
@@ -73,7 +78,7 @@ gc()
 
 sdm_data_cod <- furrr::future_map(setdet_cod, sdm_data_fn)
 
-mesh_sdm_cod <- furrr::future_map(sdm_data_cod, mesh_sdm_fn)
+mesh_sdm_cod <- purrr::map(sdm_data_cod, mesh_sdm_fn)
 
 sdm_newdata_cod <- sdm_newdata_fn(survey_cod[[1]], sdm_data_cod[[1]]) ### since all populations has the same prediction area, newdata is same for all.
 
@@ -165,7 +170,7 @@ for( i in seq_along(setdet_cod_r30)){
 
 setdet_cod_r30 <- lapply(setdet_cod_r30, function(x) split(x, x$sim)) |> flatten()
 
-#save(setdet_cod_r30, file = "./data/setdet_cod_r30.Rdata")
+#save(setdet_cod_r30, file = "./data2/setdet_cod_r30.Rdata")
 ############# Bootstrapped index
 
 boot_index_cod_r30 <- furrr::future_map_dfr(setdet_cod_r30, boot_wrapper, reps=1000, .options = furrr::furrr_options(seed = TRUE))|>
@@ -256,7 +261,7 @@ for(i in seq_along(setdet_cod_SR)){
 
 setdet_cod_SR <- lapply(setdet_cod_SR, function(x) split(x, x$sim)) |> flatten()
 
-#save(setdet_cod_SR, file = "./data/setdet_cod_SR.Rdata")
+#save(setdet_cod_SR, file = "./data2/setdet_cod_SR.Rdata")
 
 ############# Bootstrapped index
 
@@ -270,7 +275,7 @@ boot_index_cod_SR <- furrr::future_map_dfr(setdet_cod_SR, boot_wrapper, reps=100
 sdm_data_cod_SR <- furrr::future_map(setdet_cod_SR, sdm_data_fn)
 #save(sdm_data_cod_SR, file = "./data/sdm_data_cod_SR.Rdata")
 
-mesh_sdm_cod_SR  <- furrr::future_map(sdm_data_cod_SR, mesh_sdm_fn)
+mesh_sdm_cod_SR  <- purrr::map(sdm_data_cod_SR, mesh_sdm_fn)
 #save(mesh_sdm_cod_SR, file = "./data/mesh_sdm_cod_SR.Rdata")
 
 ### IID + NB2
@@ -357,7 +362,7 @@ for(i in seq_along(setdet_cod_b30)){
 
 setdet_cod_b30 <- lapply(setdet_cod_b30, function(x) split(x, x$sim)) |> flatten()
 
-#save(setdet_cod_b30, file = "./data/setdet_cod_b30.Rdata")
+#save(setdet_cod_b30, file = "./data2/setdet_cod_b30.Rdata")
 
 ############# Bootstrapped index
 
@@ -466,6 +471,8 @@ for(i in seq_along(setdet_cod_rec)){
 
 setdet_cod_rec <- lapply(setdet_cod_rec, function(x) split(x, x$sim)) |> flatten()
 
+#save(setdet_cod_rec, file = "./data2/setdet_cod_rec.Rdata")
+
 ############# Bootstrapped index
 
 boot_index_cod_rec <- furrr::future_map_dfr(setdet_cod_rec, boot_wrapper, reps=1000, .options = furrr::furrr_options(seed = TRUE))|>
@@ -478,7 +485,7 @@ gc()
 
 sdm_data_cod_rec <- furrr::future_map(setdet_cod_rec, sdm_data_fn)
 
-mesh_sdm_cod_rec <- furrr::future_map(sdm_data_cod_rec, mesh_sdm_fn)
+mesh_sdm_cod_rec <- purrr::map(sdm_data_cod_rec, mesh_sdm_fn)
 
 sdm_newdata_cod <- sdm_newdata_fn(survey_cod_rec[[1]], sdm_data_cod_rec[[1]])
 
@@ -487,27 +494,27 @@ sdm_newdata_cod <- sdm_newdata_fn(survey_cod_rec[[1]], sdm_data_cod_rec[[1]])
 
 ### IID + NB2
 sdm_NB2_IID_index_cod_rec <- furrr::future_map2_dfr(sdm_data_cod_rec, mesh_sdm_cod_rec,
-                                                    formula = formula1, range_gt = 125, sigma_lt = 12.5, type = "NB", scenario = "Recovery",
+                                                    formula = formula1, range_gt = 75, sigma_lt = 7.5, type = "NB", scenario = "Recovery",
                                                     species = "Cod-like", newdata = sdm_newdata_cod, model_run_NB, .id = "model", .progress = TRUE)
 ### IID + NB2 + depth
 sdm_NB2_IID_depth_index_cod_rec <- furrr::future_map2_dfr(sdm_data_cod_rec, mesh_sdm_cod_rec,
-                                                          formula = formula2, range_gt = 125, sigma_lt = 12.5, type = "NB + Depth", scenario = "Recovery",
+                                                          formula = formula2, range_gt = 75, sigma_lt = 7.5, type = "NB + Depth", scenario = "Recovery",
                                                           species = "Cod-like", newdata = sdm_newdata_cod, model_run_NB, .id = "model", .progress = TRUE)
 ### IID + TW
 sdm_TW_IID_index_cod_rec <- furrr::future_map2_dfr(sdm_data_cod_rec, mesh_sdm_cod_rec,
-                                                   formula = formula1, range_gt = 125, sigma_lt = 12.5, type = "TW", scenario = "Recovery",
+                                                   formula = formula1, range_gt = 75, sigma_lt = 7.5, type = "TW", scenario = "Recovery",
                                                    species = "Cod-like", newdata = sdm_newdata_cod, model_run_TW, .id = "model", .progress = TRUE)
 ### IID + TW + depth
 sdm_TW_IID_depth_index_cod_rec <- furrr::future_map2_dfr(sdm_data_cod_rec, mesh_sdm_cod_rec,
-                                                         formula = formula2, range_gt = 125, sigma_lt = 12.5, type = "TW + Depth", scenario = "Recovery",
+                                                         formula = formula2, range_gt = 75, sigma_lt = 7.5, type = "TW + Depth", scenario = "Recovery",
                                                          species = "Cod-like", newdata = sdm_newdata_cod, model_run_TW, .id = "model", .progress = TRUE)
 ### IID + DG
 sdm_DG_IID_index_cod_rec <- furrr::future_map2_dfr(sdm_data_cod_rec, mesh_sdm_cod_rec,
-                                                   formula = formula1, range_gt = 125, sigma_lt = 12.5, type = "DG", scenario = "Recovery",
+                                                   formula = formula1, range_gt = 75, sigma_lt = 7.5, type = "DG", scenario = "Recovery",
                                                    species = "Cod-like", newdata = sdm_newdata_cod, model_run_DG, .id = "model", .progress = TRUE)
 #### IID + DG + depth
 sdm_DG_IID_depth_index_cod_rec <- furrr::future_map2_dfr(sdm_data_cod_rec, mesh_sdm_cod_rec,
-                                                         formula = list(formula1, formula2), range_gt = 125, sigma_lt = 12.5, type = "DG + Depth", scenario = "Recovery",
+                                                         formula = list(formula1, formula2), range_gt = 75, sigma_lt = 7.5, type = "DG + Depth", scenario = "Recovery",
                                                          species = "Cod-like", newdata = sdm_newdata_cod, model_run_DG, .id = "model", .progress = TRUE)
 
 
@@ -579,7 +586,7 @@ for( i in seq_along(setdet_cod_so)){
 
 setdet_cod_so <- lapply(setdet_cod_so, function(x) split(x, x$sim)) |> flatten()
 
-#save(setdet_cod_so, file = "./data/setdet_cod_so.Rdata")
+save(setdet_cod_so, file = "./data2/setdet_cod_so.Rdata")
 
 ############# Bootstrapped index
 
@@ -634,3 +641,4 @@ index_cod_all_scenarios <- do.call(bind_rows, mget(ls(pattern = "index")))
 index_cod_all_scenarios <- merge(index_cod_all_scenarios, true_cod, by=c("pop", "year", "species"))
 save(index_cod_all_scenarios, file = "./data2/index_cod_all_scenarios.Rdata")
 
+Sys.time()
