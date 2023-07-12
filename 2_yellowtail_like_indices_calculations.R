@@ -10,8 +10,8 @@ library(data.table)
 library(dplyr)
 library(purrr)
 library(ggpubr)
-plan(multisession)
-# plan(multisession, workers = 4L)
+# plan(multisession)
+plan(multisession, workers = 10L)
 
 ### Load functions
 source("./pop_yellowtail_fn.R")
@@ -19,6 +19,9 @@ source("./model_run_fn.R")
 source("./bootstrapping_fn.R")
 source("./data_prep_fn.R")
 
+# set to 1 so data.table doesn't spawn forks on forks
+# usethis::edit_r_environ()
+Sys.getenv("OMP_THREAD_LIMIT")
 ############               #############
 
             # BASE SCENARIO
@@ -75,7 +78,7 @@ boot_index_yellowtail <- furrr::future_map_dfr(setdet_yellowtail, boot_wrapper, 
 
 sdm_data_yellowtail <- furrr::future_map(setdet_yellowtail, sdm_data_fn)
 
-mesh_sdm_yellowtail <- furrr::future_map(sdm_data_yellowtail, mesh_sdm_fn)
+mesh_sdm_yellowtail <- purrr::map(sdm_data_yellowtail, mesh_sdm_fn)
 
 sdm_newdata_yellowtail <- sdm_newdata_fn(survey_yellowtail[[1]], sdm_data_yellowtail[[1]]) ### since all populations has the same prediction area, newdata is same for all.
 
@@ -176,7 +179,7 @@ boot_index_yellowtail_r30 <- furrr::future_map_dfr(setdet_yellowtail_r30, boot_w
 
 sdm_data_yellowtail_r30 <- furrr::future_map(setdet_yellowtail_r30, sdm_data_fn)
 
-mesh_sdm_yellowtail_r30  <-furrr::future_map(sdm_data_yellowtail_r30, mesh_sdm_fn)
+mesh_sdm_yellowtail_r30 <- purrr::map(sdm_data_yellowtail_r30, mesh_sdm_fn)
 
 #mesh_sdm_yellowtail_r30  <- map(sdm_data_yellowtail_r30, mesh_sdm_fn)
 
@@ -276,7 +279,7 @@ boot_index_yellowtail_SR <- furrr::future_map_dfr(setdet_yellowtail_SR, boot_wra
 
 sdm_data_yellowtail_SR <- furrr::future_map(setdet_yellowtail_SR, sdm_data_fn)
 
-mesh_sdm_yellowtail_SR  <- furrr::future_map(sdm_data_yellowtail_SR, mesh_sdm_fn)
+mesh_sdm_yellowtail_SR  <- purrr::map(sdm_data_yellowtail_SR, mesh_sdm_fn)
 
 
 ### IID + NB2
