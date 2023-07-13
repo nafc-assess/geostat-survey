@@ -11,7 +11,7 @@ library(dplyr)
 library(purrr)
 library(ggpubr)
 # plan(multisession)
-plan(multisession, workers = 10L)
+plan(multisession, workers = 25L)
 
 ### Load functions
 source("./pop_yellowtail_fn.R")
@@ -76,9 +76,14 @@ boot_index_yellowtail <- furrr::future_map_dfr(setdet_yellowtail, boot_wrapper, 
 
 ### Data prep
 
-sdm_data_yellowtail <- furrr::future_map(setdet_yellowtail, sdm_data_fn)
 
-mesh_sdm_yellowtail <- purrr::map(sdm_data_yellowtail, mesh_sdm_fn)
+sdm_data_yellowtail <- purrr::map(setdet_yellowtail, sdm_data_fn)
+
+mesh_sdm_yellowtail <- purrr::map(seq_along(sdm_data_yellowtail), function(i) {
+  cat(i, "\n")
+  mesh_sdm_fn(sdm_data_yellowtail[[i]])
+}
+)
 
 sdm_newdata_yellowtail <- sdm_newdata_fn(survey_yellowtail[[1]], sdm_data_yellowtail[[1]]) ### since all populations has the same prediction area, newdata is same for all.
 
@@ -177,7 +182,7 @@ boot_index_yellowtail_r30 <- furrr::future_map_dfr(setdet_yellowtail_r30, boot_w
 
 ### Data prep
 
-sdm_data_yellowtail_r30 <- furrr::future_map(setdet_yellowtail_r30, sdm_data_fn)
+sdm_data_yellowtail_r30 <- purrr::map(setdet_yellowtail_r30, sdm_data_fn)
 
 mesh_sdm_yellowtail_r30 <- purrr::map(sdm_data_yellowtail_r30, mesh_sdm_fn)
 
@@ -277,7 +282,7 @@ boot_index_yellowtail_SR <- furrr::future_map_dfr(setdet_yellowtail_SR, boot_wra
 
 ### Data prep
 
-sdm_data_yellowtail_SR <- furrr::future_map(setdet_yellowtail_SR, sdm_data_fn)
+sdm_data_yellowtail_SR <- purrr::map(setdet_yellowtail_SR, sdm_data_fn)
 
 mesh_sdm_yellowtail_SR  <- purrr::map(sdm_data_yellowtail_SR, mesh_sdm_fn)
 
@@ -374,7 +379,7 @@ boot_index_yellowtail_b30 <- furrr::future_map_dfr(setdet_yellowtail_b30, boot_w
 
 ### Data prep
 
-sdm_data_yellowtail_b30 <- furrr::future_map(setdet_yellowtail_b30, sdm_data_fn)
+sdm_data_yellowtail_b30 <- purrr::map(setdet_yellowtail_b30, sdm_data_fn)
 
 mesh_sdm_yellowtail_b30  <- map(sdm_data_yellowtail_b30, mesh_sdm_fn)
 
@@ -484,7 +489,7 @@ gc()
 
 ### Data prep
 
-sdm_data_yellowtail_rec <- furrr::future_map(setdet_yellowtail_rec, sdm_data_fn)
+sdm_data_yellowtail_rec <- purrr::map(setdet_yellowtail_rec, sdm_data_fn)
 
 mesh_sdm_yellowtail_rec <- furrr::future_map(sdm_data_yellowtail_rec, mesh_sdm_fn)
 
@@ -595,7 +600,7 @@ gc()
 
 ### Data prep
 
-sdm_data_yellowtail_so <- furrr::future_map(setdet_yellowtail_so, sdm_data_fn)
+sdm_data_yellowtail_so <- purrr::map(setdet_yellowtail_so, sdm_data_fn)
 
 mesh_sdm_yellowtail_so <- furrr::future_map(sdm_data_yellowtail_so, mesh_sdm_fn)
 
