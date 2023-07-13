@@ -639,6 +639,6 @@ sdm_DG_IID_depth_index_cod_so <- furrr::future_map2_dfr(sdm_data_cod_so, mesh_sd
 
 index_cod_all_scenarios <- do.call(bind_rows, mget(ls(pattern = "index")))
 index_cod_all_scenarios <- merge(index_cod_all_scenarios, true_cod, by=c("pop", "year", "species"))
-save(index_cod_all_scenarios, file = "./data2/index_cod_all_scenarios.Rdata")
+save(index_cod_all_scenarios, file = "./data/index_cod_all_scenarios.Rdata")
 
 Sys.time()
