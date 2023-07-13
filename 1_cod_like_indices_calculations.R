@@ -10,7 +10,8 @@ library(data.table)
 library(dplyr)
 library(purrr)
 library(ggpubr)
-plan(multisession)
+#plan(multisession)
+plan(multisession, workers = 10L)
 
 
 ### Load functions
@@ -78,9 +79,11 @@ gc()
 
 ### Data prep
 
+inla_mesh <- make_standard_mesh() # done once
+
 sdm_data_cod <- furrr::future_map(setdet_cod, sdm_data_fn)
 
-mesh_sdm_cod <- purrr::map(sdm_data_cod, mesh_sdm_fn)
+mesh_sdm_cod <- purrr::map(sdm_data_cod, mesh_sdm_fn, existing_mesh = inla_mesh)
 
 sdm_newdata_cod <- sdm_newdata_fn(survey_cod[[1]], sdm_data_cod[[1]]) ### since all populations has the same prediction area, newdata is same for all.
 
@@ -186,7 +189,7 @@ boot_index_cod_r30 <- furrr::future_map_dfr(setdet_cod_r30, boot_wrapper, reps=1
 
 sdm_data_cod_r30 <- furrr::future_map(setdet_cod_r30, sdm_data_fn)
 
-mesh_sdm_cod_r30  <- purrr::map(sdm_data_cod_r30, mesh_sdm_fn)
+mesh_sdm_cod_r30  <- purrr::map(sdm_data_cod_r30, mesh_sdm_fn, existing_mesh = inla_mesh)
 
 ### IID + NB2
 sdm_NB2_IID_index_cod_r30 <- furrr::future_map2_dfr(sdm_data_cod_r30, mesh_sdm_cod_r30,
@@ -281,7 +284,7 @@ boot_index_cod_SR <- furrr::future_map_dfr(setdet_cod_SR, boot_wrapper, reps=100
 sdm_data_cod_SR <- furrr::future_map(setdet_cod_SR, sdm_data_fn)
 #save(sdm_data_cod_SR, file = "./data/sdm_data_cod_SR.Rdata")
 
-mesh_sdm_cod_SR  <- purrr::map(sdm_data_cod_SR, mesh_sdm_fn)
+mesh_sdm_cod_SR  <- purrr::map(sdm_data_cod_SR, mesh_sdm_fn, existing_mesh = inla_mesh)
 #save(mesh_sdm_cod_SR, file = "./data/mesh_sdm_cod_SR.Rdata")
 
 ### IID + NB2
@@ -385,7 +388,7 @@ sdm_data_cod_b30 <- furrr::future_map(setdet_cod_b30, sdm_data_fn)
 
 #save(sdm_data_cod_b30, file = "./data/sdm_data_cod_b30.Rdata")
 
-mesh_sdm_cod_b30  <- purrr::map(sdm_data_cod_b30, mesh_sdm_fn)
+mesh_sdm_cod_b30  <- purrr::map(sdm_data_cod_b30, mesh_sdm_fn, existing_mesh = inla_mesh)
 
 ### IID + NB2
 sdm_NB2_IID_index_cod_b30 <- furrr::future_map2_dfr(sdm_data_cod_b30, mesh_sdm_cod_b30,
@@ -495,7 +498,7 @@ gc()
 
 sdm_data_cod_rec <- furrr::future_map(setdet_cod_rec, sdm_data_fn)
 
-mesh_sdm_cod_rec <- purrr::map(sdm_data_cod_rec, mesh_sdm_fn)
+mesh_sdm_cod_rec <- purrr::map(sdm_data_cod_rec, mesh_sdm_fn, existing_mesh = inla_mesh)
 
 sdm_newdata_cod <- sdm_newdata_fn(survey_cod_rec[[1]], sdm_data_cod_rec[[1]])
 
@@ -611,7 +614,7 @@ gc()
 
 sdm_data_cod_so <- furrr::future_map(setdet_cod_so, sdm_data_fn)
 
-mesh_sdm_cod_so <- furrr::future_map(sdm_data_cod_so, mesh_sdm_fn)
+mesh_sdm_cod_so <- furrr::future_map(sdm_data_cod_so, mesh_sdm_fn, existing_mesh = inla_mesh)
 
 sdm_newdata_cod <- sdm_newdata_fn(survey_so[[1]], sdm_data_cod_so[[1]])
 
