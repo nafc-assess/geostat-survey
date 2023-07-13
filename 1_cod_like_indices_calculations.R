@@ -30,6 +30,8 @@ Sys.getenv("OMP_THREAD_LIMIT")
 
 #############               #############
 
+message("BASE SCENARIO")
+
 #############  Population simulations
 
 set.seed(1)
@@ -116,6 +118,8 @@ sdm_DG_IID_depth_index_cod <- furrr::future_map2_dfr(sdm_data_cod, mesh_sdm_cod,
 # Scenario 2: SET DENSITY REDUCTION #
 
 #############               #############
+
+message("SET DENSITY REDUCTION SCENARIO")
 
 # Subsetting the sets by year
 # 30 % effort reduction after Year 10
@@ -214,6 +218,8 @@ sdm_DG_IID_depth_index_cod_r30 <- furrr::future_map2_dfr(sdm_data_cod_r30, mesh_
 # Scenario 3: STRATA REMOVAL SCENARIO
 
 #############               #############
+
+message("STRATA REMOVAL SCENARIO")
 
 setdet_cod <- map(survey_cod, function(x) {pluck(x, 'setdet')})
 
@@ -314,6 +320,8 @@ sdm_DG_IID_depth_index_cod_SR <- furrr::future_map2_dfr(sdm_data_cod_SR, mesh_sd
 
 #############                           #############
 
+message("AREA BLOCKED REDUCTION SCENARIO")
+
 ################# Blocking the setdets
 
 setdet_cod <- map(survey_cod, function(x) {pluck(x, 'setdet')})
@@ -409,6 +417,8 @@ sdm_DG_IID_depth_index_cod_b30 <- furrr::future_map2_dfr(sdm_data_cod_b30, mesh_
 # Scenario 5: RECOVERY
 
 #############                           #############
+
+message("RECOVERY SCENARIO")
 
 #############  Population simulations
 
@@ -524,6 +534,7 @@ sdm_DG_IID_depth_index_cod_rec <- furrr::future_map2_dfr(sdm_data_cod_rec, mesh_
 
 #############                           #############
 
+message("RECOVERY WITH SPILLOVER EFFECT")
 
 #############  Population simulations
 
