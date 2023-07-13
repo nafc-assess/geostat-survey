@@ -181,7 +181,7 @@ boot_index_yellowtail_r30 <- furrr::future_map_dfr(setdet_yellowtail_r30, boot_w
 
 sdm_data_yellowtail_r30 <- purrr::map(setdet_yellowtail_r30, sdm_data_fn)
 
-mesh_sdm_yellowtail_r30 <- purrr::map(sdm_data_yellowtail_r30, mesh_sdm_fn)
+mesh_sdm_yellowtail_r30 <- purrr::map(sdm_data_yellowtail_r30, mesh_sdm_fn, existing_mesh = inla_mesh)
 
 #mesh_sdm_yellowtail_r30  <- map(sdm_data_yellowtail_r30, mesh_sdm_fn)
 
@@ -281,7 +281,7 @@ boot_index_yellowtail_SR <- furrr::future_map_dfr(setdet_yellowtail_SR, boot_wra
 
 sdm_data_yellowtail_SR <- purrr::map(setdet_yellowtail_SR, sdm_data_fn)
 
-mesh_sdm_yellowtail_SR  <- purrr::map(sdm_data_yellowtail_SR, mesh_sdm_fn)
+mesh_sdm_yellowtail_SR  <- purrr::map(sdm_data_yellowtail_SR, mesh_sdm_fn, existing_mesh = inla_mesh)
 
 
 ### IID + NB2
@@ -378,7 +378,7 @@ boot_index_yellowtail_b30 <- furrr::future_map_dfr(setdet_yellowtail_b30, boot_w
 
 sdm_data_yellowtail_b30 <- purrr::map(setdet_yellowtail_b30, sdm_data_fn)
 
-mesh_sdm_yellowtail_b30  <- map(sdm_data_yellowtail_b30, mesh_sdm_fn)
+mesh_sdm_yellowtail_b30  <- map(sdm_data_yellowtail_b30, mesh_sdm_fn, existing_mesh = inla_mesh)
 
 ### IID + NB2
 sdm_NB2_IID_index_yellowtail_b30  <- furrr::future_map2_dfr(sdm_data_yellowtail_b30, mesh_sdm_yellowtail_b30,
@@ -488,7 +488,7 @@ gc()
 
 sdm_data_yellowtail_rec <- purrr::map(setdet_yellowtail_rec, sdm_data_fn)
 
-mesh_sdm_yellowtail_rec <- furrr::future_map(sdm_data_yellowtail_rec, mesh_sdm_fn)
+mesh_sdm_yellowtail_rec <- furrr::future_map(sdm_data_yellowtail_rec, mesh_sdm_fn, existing_mesh = inla_mesh)
 
 ### Models
 
@@ -599,7 +599,7 @@ gc()
 
 sdm_data_yellowtail_so <- purrr::map(setdet_yellowtail_so, sdm_data_fn)
 
-mesh_sdm_yellowtail_so <- furrr::future_map(sdm_data_yellowtail_so, mesh_sdm_fn)
+mesh_sdm_yellowtail_so <- furrr::future_map(sdm_data_yellowtail_so, mesh_sdm_fn, existing_mesh = inla_mesh)
 
 ### Models
 
