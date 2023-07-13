@@ -22,6 +22,8 @@ source("./data_prep_fn.R")
 # set to 1 so data.table doesn't spawn forks on forks
 # usethis::edit_r_environ()
 Sys.getenv("OMP_THREAD_LIMIT")
+
+ITER <- 200L
 ############               #############
 
             # BASE SCENARIO
@@ -33,7 +35,7 @@ message("BASE SCENARIO")
 #############  Population simulations
 
 set.seed(1)
-survey_yellowtail <- furrr::future_map(seq_len(100L), n_sims = 1, population_yellowtail, .options = furrr::furrr_options(seed = TRUE, packages = "SimSurvey"))
+survey_yellowtail <- furrr::future_map(seq_len(ITER), n_sims = 1, population_yellowtail, .options = furrr::furrr_options(seed = TRUE, packages = "SimSurvey"))
 gc()
 
 #save(survey_yellowtail, file = "./data/survey_yellowtail_base.Rdata")
@@ -419,7 +421,7 @@ message("RECOVERY SCENARIO")
 #############  Population simulations
 
 set.seed(1)
-survey_yellowtail_rec <- furrr::future_map(seq_len(100), n_sims = 1, population_yellowtail_recovery, .options = furrr::furrr_options(seed = TRUE, packages = "SimSurvey"))
+survey_yellowtail_rec <- furrr::future_map(seq_len(ITER), n_sims = 1, population_yellowtail_recovery, .options = furrr::furrr_options(seed = TRUE, packages = "SimSurvey"))
 gc()
 
 ############# True abundance
@@ -530,7 +532,7 @@ message("RECOVERY WITH SPILLOVER EFFECT")
 #############  Population simulations
 
 set.seed(1)
-survey_yellowtail_so <- furrr::future_map(seq_len(100), n_sims = 1, population_yellowtail_spillover, .options = furrr::furrr_options(seed = TRUE, packages = "SimSurvey"))
+survey_yellowtail_so <- furrr::future_map(seq_len(ITER), n_sims = 1, population_yellowtail_spillover, .options = furrr::furrr_options(seed = TRUE, packages = "SimSurvey"))
 gc()
 
 ############# True abundance

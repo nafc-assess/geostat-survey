@@ -13,6 +13,7 @@ library(ggpubr)
 #plan(multisession)
 plan(multisession, workers = 10L)
 
+ITER <- 200L
 
 ### Load functions
 source("./pop_cod_fn.R")
@@ -36,7 +37,7 @@ message("BASE SCENARIO")
 #############  Population simulations
 
 set.seed(1)
-survey_cod <- furrr::future_map(seq_len(100), n_sim = 1, population_cod, .options = furrr::furrr_options(seed = TRUE, packages = "SimSurvey"))
+survey_cod <- furrr::future_map(seq_len(ITER), n_sim = 1, population_cod, .options = furrr::furrr_options(seed = TRUE, packages = "SimSurvey"))
 gc()
 
 #save(survey_cod, file = "./data/survey_cod_base.Rdata")
@@ -426,7 +427,7 @@ message("RECOVERY SCENARIO")
 #############  Population simulations
 
 set.seed(1)
-survey_cod_rec <- furrr::future_map(seq_len(100), n_sims = 1, population_cod_recovery, .options = furrr::furrr_options(seed = TRUE, packages = "SimSurvey"))
+survey_cod_rec <- furrr::future_map(seq_len(ITER), n_sims = 1, population_cod_recovery, .options = furrr::furrr_options(seed = TRUE, packages = "SimSurvey"))
 gc()
 #save(survey_cod_rec, file = "./data/survey_cod_rec.Rdata")
 
@@ -542,7 +543,7 @@ message("RECOVERY WITH SPILLOVER EFFECT")
 #############  Population simulations
 
 set.seed(1)
-survey_cod_so <- furrr::future_map(seq_len(100), n_sim = 1, population_cod_spillover, .options = furrr::furrr_options(seed = TRUE, packages = "SimSurvey"))
+survey_cod_so <- furrr::future_map(seq_len(ITER), n_sim = 1, population_cod_spillover, .options = furrr::furrr_options(seed = TRUE, packages = "SimSurvey"))
 gc()
 
 #save(survey_cod_so, file = "./data/survey_cod_so_05.Rdata")
