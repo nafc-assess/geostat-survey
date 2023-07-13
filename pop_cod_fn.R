@@ -48,7 +48,7 @@ population_cod <- function(iter, n_sims) {
                                 depth_par = sim_parabola(mu = log(160),
                                                          sigma = 0.5,
                                                          log_space = TRUE, plot=FALSE))
-  set.seed(iter * 35)
+  set.seed(iter * 43)
   survey <- SimSurvey::sim_survey(pop, n_sims = n_sims,
                                   q = sim_logistic(k = 2, x0 = 3, plot = FALSE),
                                   trawl_dim = c(3, 0.02),
@@ -116,7 +116,7 @@ population_cod_recovery <- function(iter, n_sims) {
                                                           phi_year = 0.8,
                                                           group_ages = 5:20),
                                 depth_par = depth_mpa_par_recovery)
-  set.seed(iter * 35)
+  set.seed(iter * 43)
   survey <- SimSurvey::sim_survey(pop, n_sims = n_sims,
                                   q = sim_logistic(k = 2, x0 = 3, plot = FALSE),
                                   trawl_dim = c(3, 0.02),
@@ -186,7 +186,7 @@ population_cod_spillover <- function(iter, n_sims) {
                                                           group_ages = 5:20),
                                 depth_par = depth_mpa_par)
 
-  set.seed(iter * 35)
+  set.seed(iter * 43)
 
   survey <- SimSurvey::sim_survey(pop, n_sims = n_sims,
                                   q = sim_logistic(k = 2, x0 = 3, plot = FALSE),
