@@ -4,7 +4,7 @@
 #' @param iter: # of simulation
 #'
 population_cod <- function(iter, n_sims) {
-  set.seed(iter * 35)
+  set.seed(iter * 1)
   pop <- sim_abundance(ages = 1:20,
                        years = 1:20,
                        Z = sim_Z(log_mean = log(0.3), # changed this from 0.4 to 0.3
@@ -61,7 +61,6 @@ population_cod <- function(iter, n_sims) {
 
 grid_with_mpa_r <- make_grid(x_range = c(-150, 150),
                              y_range = c(-150, 150),
-                             res = c(10, 10),
                              shelf_depth = 200,
                              shelf_width = 100,
                              depth_range = c(0, 1000),
@@ -82,7 +81,7 @@ depth_mpa_par_recovery <- sim_nlf(formula = ~ alpha + ifelse(year > 10, (beta * 
                                                beta = 5))
 
 population_cod_recovery <- function(iter, n_sims) {
-  set.seed(iter * 35)
+  set.seed(iter * 1)
   pop <- sim_abundance(ages = 1:20,
                        years = 1:20,
                        Z = sim_Z(log_mean = log(0.3), # changed this from 0.4 to 0.3
@@ -139,7 +138,7 @@ grid_with_mpa <- make_grid(x_range = c(-150, 150),
 
 grid_xy <- as.data.frame(grid_with_mpa)
 grid_xy$mpa <- 0
-grid_xy$mpa[grid_xy$x < 60 & grid_xy$x > -110 & grid_xy$y > -80 & grid_xy$y < 120] <- 0.7
+grid_xy$mpa[grid_xy$x < 60 & grid_xy$x > -110 & grid_xy$y > -80 & grid_xy$y < 120] <- 0.5
 grid_xy$mpa[grid_xy$x < 50 & grid_xy$x > -100 & grid_xy$y > -70 & grid_xy$y < 110] <- 1
 grid_with_mpa$mpa <- grid_xy$mpa
 
@@ -150,7 +149,7 @@ depth_mpa_par <- sim_nlf(formula = ~ alpha + ifelse(year > 10, (beta * mpa * (ye
                      beta = 5))
 
 population_cod_spillover <- function(iter, n_sims) {
-  set.seed(iter * 35)
+  set.seed(iter * 1)
   pop <- sim_abundance(ages = 1:20,
                        years = 1:20,
                        Z = sim_Z(log_mean = log(0.3), # changed this from 0.4 to 0.3
