@@ -4,6 +4,7 @@
 #' @param iter: # of simulation
 #'
 population_cod <- function(iter, n_sims) {
+
   set.seed(iter * 1)
   pop <- sim_abundance(ages = 1:20,
                        years = 1:20,
@@ -46,14 +47,15 @@ population_cod <- function(iter, n_sims) {
 
                                 depth_par = sim_parabola(mu = log(160),
                                                          sigma = 0.5,
-                                                         log_space = TRUE, plot=FALSE)) |>
-    SimSurvey::sim_survey(n_sims = n_sims,
-                          q = sim_logistic(k = 2, x0 = 3, plot = FALSE),
-                          trawl_dim = c(3, 0.02),
-                          resample_cells = FALSE,
-                          binom_error = TRUE,
-                          min_sets = 2,
-                          set_den = 2/1000)
+                                                         log_space = TRUE, plot=FALSE))
+  set.seed(iter * 35)
+  survey <- SimSurvey::sim_survey(pop, n_sims = n_sims,
+                                  q = sim_logistic(k = 2, x0 = 3, plot = FALSE),
+                                  trawl_dim = c(3, 0.02),
+                                  resample_cells = FALSE,
+                                  binom_error = TRUE,
+                                  min_sets = 2,
+                                  set_den = 2/1000)
 }
 
 
@@ -61,6 +63,7 @@ population_cod <- function(iter, n_sims) {
 
 grid_with_mpa_r <- make_grid(x_range = c(-150, 150),
                              y_range = c(-150, 150),
+                             res = c(10, 10),
                              shelf_depth = 200,
                              shelf_width = 100,
                              depth_range = c(0, 1000),
@@ -81,6 +84,7 @@ depth_mpa_par_recovery <- sim_nlf(formula = ~ alpha + ifelse(year > 10, (beta * 
                                                beta = 5))
 
 population_cod_recovery <- function(iter, n_sims) {
+
   set.seed(iter * 1)
   pop <- sim_abundance(ages = 1:20,
                        years = 1:20,
@@ -111,15 +115,15 @@ population_cod_recovery <- function(iter, n_sims) {
                                                           phi_age = 0.4,
                                                           phi_year = 0.8,
                                                           group_ages = 5:20),
-                                depth_par = depth_mpa_par_recovery) |>
-
-    SimSurvey::sim_survey(n_sims = n_sims,
-                          q = sim_logistic(k = 2, x0 = 3, plot = FALSE),
-                          trawl_dim = c(3, 0.02),
-                          resample_cells = FALSE,
-                          binom_error = TRUE,
-                          min_sets = 2,
-                          set_den = 2/1000)
+                                depth_par = depth_mpa_par_recovery)
+  set.seed(iter * 35)
+  survey <- SimSurvey::sim_survey(pop, n_sims = n_sims,
+                                  q = sim_logistic(k = 2, x0 = 3, plot = FALSE),
+                                  trawl_dim = c(3, 0.02),
+                                  resample_cells = FALSE,
+                                  binom_error = TRUE,
+                                  min_sets = 2,
+                                  set_den = 2/1000)
 }
 
 
@@ -143,12 +147,13 @@ grid_xy$mpa[grid_xy$x < 50 & grid_xy$x > -100 & grid_xy$y > -70 & grid_xy$y < 11
 grid_with_mpa$mpa <- grid_xy$mpa
 
 depth_mpa_par <- sim_nlf(formula = ~ alpha + ifelse(year > 10, (beta * mpa * (year - 10) / 10), 0) - ((log(depth) - mu) ^ 2) / (2 * sigma ^ 2),
-        coeff = list(alpha = 0,
-                     mu = log(160),
-                     sigma = 0.5,
-                     beta = 5))
+                         coeff = list(alpha = 0,
+                                      mu = log(160),
+                                      sigma = 0.5,
+                                      beta = 5))
 
 population_cod_spillover <- function(iter, n_sims) {
+
   set.seed(iter * 1)
   pop <- sim_abundance(ages = 1:20,
                        years = 1:20,
@@ -179,13 +184,15 @@ population_cod_spillover <- function(iter, n_sims) {
                                                           phi_age = 0.4,
                                                           phi_year = 0.8,
                                                           group_ages = 5:20),
-                                depth_par = depth_mpa_par) |>
+                                depth_par = depth_mpa_par)
 
-                                  SimSurvey::sim_survey(n_sims = n_sims,
-                                                        q = sim_logistic(k = 2, x0 = 3, plot = FALSE),
-                                                        trawl_dim = c(3, 0.02),
-                                                        resample_cells = FALSE,
-                                                        binom_error = TRUE,
-                                                        min_sets = 2,
-                                                        set_den = 2/1000)
+  set.seed(iter * 35)
+
+  survey <- SimSurvey::sim_survey(pop, n_sims = n_sims,
+                                  q = sim_logistic(k = 2, x0 = 3, plot = FALSE),
+                                  trawl_dim = c(3, 0.02),
+                                  resample_cells = FALSE,
+                                  binom_error = TRUE,
+                                  min_sets = 2,
+                                  set_den = 2/1000)
 }
