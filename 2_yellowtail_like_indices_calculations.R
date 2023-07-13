@@ -11,7 +11,7 @@ library(dplyr)
 library(purrr)
 library(ggpubr)
 # plan(multisession)
-plan(multisession, workers = 25L)
+plan(multisession, workers = 10L)
 
 ### Load functions
 source("./pop_yellowtail_fn.R")
@@ -75,15 +75,12 @@ boot_index_yellowtail <- furrr::future_map_dfr(setdet_yellowtail, boot_wrapper, 
 ############# sdmTMB
 
 ### Data prep
-
+inla_mesh <- make_standard_mesh() # done once
 
 sdm_data_yellowtail <- purrr::map(setdet_yellowtail, sdm_data_fn)
 
-mesh_sdm_yellowtail <- purrr::map(seq_along(sdm_data_yellowtail), function(i) {
-  cat(i, "\n")
-  mesh_sdm_fn(sdm_data_yellowtail[[i]])
-}
-)
+# standard mesh passed through
+mesh_sdm_yellowtail <- purrr::map(sdm_data_yellowtail, mesh_sdm_fn, existing_mesh = inla_mesh)
 
 sdm_newdata_yellowtail <- sdm_newdata_fn(survey_yellowtail[[1]], sdm_data_yellowtail[[1]]) ### since all populations has the same prediction area, newdata is same for all.
 
