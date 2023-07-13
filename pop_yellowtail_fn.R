@@ -41,7 +41,7 @@ population_yellowtail <- function(iter, n_sims) {
                      depth_par = sim_parabola(mu = log(90),
                                               sigma = 0.3,
                                               log_space = TRUE))
-  set.seed(iter * 35)
+  set.seed(iter * 43)
   survey <- SimSurvey::sim_survey(pop, n_sims = n_sims,
                                   q = sim_logistic(k = 1.6, x0 = 5.5, plot = FALSE),
                                   trawl_dim = c(3, 0.02),
@@ -101,7 +101,7 @@ population_yellowtail_recovery <- function(iter, n_sims) {
                                               phi_year = 0.8,
                                               group_ages = 5:9),
                                 depth_par = depth_mpa_par_recovery)
-  set.seed(35)
+  set.seed(iter *43)
   survey <- SimSurvey::sim_survey(pop, n_sims = n_sims,
                                   q = sim_logistic(k = 1.6, x0 = 5.5, plot = FALSE),
                                   trawl_dim = c(3, 0.02),
@@ -162,7 +162,7 @@ population_yellowtail_spillover <- function(iter, n_sims) {
                                               phi_year = 0.8,
                                               group_ages = 5:9),
                                 depth_par = depth_mpa_par)
-  set.seed(35)
+  set.seed(iter *43)
   survey <- SimSurvey::sim_survey(pop, n_sims = n_sims,
                                   q = sim_logistic(k = 1.6, x0 = 5.5, plot = FALSE),
                                   trawl_dim = c(3, 0.02),
