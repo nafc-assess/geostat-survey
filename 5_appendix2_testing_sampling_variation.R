@@ -1,8 +1,8 @@
 #Appendix 2 --- Testing sampling variation
 
 library(here)
-load(here("data2", "index_cod_all_scenarios_10x100.Rdata"))
-load(here("data2", "index_cod_all_scenarios_100x10.Rdata"))
+load(here("data", "index_cod_all_scenarios_10x100.Rdata"))
+load(here("data", "index_cod_all_scenarios_100x10.Rdata"))
 
 library(tidyr)
 library(dplyr)
@@ -76,7 +76,7 @@ b <- ggplot(IQR_table) +
 figure_apx_iqr <- ggarrange(a, b, ncol = 2, nrow = 1, legend = "right", common.legend = TRUE)
 figure_apx_iqr
 
-ggsave("data2/figure_apx_iqr.pdf", plot = figure_apx_iqr, width = 10, height = 6, units = "in", dpi = 500, bg = "white")
+ggsave("data/figure_apx_iqr.pdf", plot = figure_apx_iqr, width = 10, height = 6, units = "in", dpi = 500, bg = "white")
 
 
 #### numeric
