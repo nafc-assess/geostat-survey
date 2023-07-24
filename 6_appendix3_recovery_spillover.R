@@ -16,11 +16,6 @@ library(ggplot2)
 library(sf)
 library(ggpubr)
 
-## Creating a polygon for the MPA
-mpa <- st_polygon(list(cbind(c(-100, 50, 50, -100, -100), c(-70, -70, 110, 110, -70))))
-buffer <- st_polygon(list(cbind(c(-110, 60, 60, -110, -110), c(-80, -80, 120, 120, -80))))
-
-
 ##### Yellowtail maps
 # Base
 pop_dist_age_base_yt <- map(survey_yellowtail, function(x) {merge(x$grid_xy, x$sp_N, by=c("cell"))})
@@ -32,11 +27,11 @@ for(i in seq_along(pop_dist_age_base_yt)){
     summarise(N_all_age = sum(N), I_all_age= sum(I))|>
     mutate(scenario = "Base", pop = as.numeric(i)) |>
     mutate(status = "Unprotected") |>
-    mutate(status = ifelse(x < 60 & x > -110 & y > -80 & y < 120, "Buffer", status)) |> #0.7 effect
+    mutate(status = ifelse(x < 60 & x > -110 & y > -80 & y < 120, "Buffer", status)) |>
     mutate(status = ifelse(x < 50 & x > -100 & y > -70 & y < 110, "MPA", status))}
 
 # Recovery
-pop_dist_age_rec_yt <- map(survey_rec, function(x) {merge(x$grid_xy, x$sp_N, by=c("cell"))})
+pop_dist_age_rec_yt <- map(survey_yellowtail_rec, function(x) {merge(x$grid_xy, x$sp_N, by=c("cell"))})
 
 pop_dist_yellowtail_rec <- NULL
 for(i in seq_along(pop_dist_age_rec_yt)){
@@ -45,7 +40,7 @@ for(i in seq_along(pop_dist_age_rec_yt)){
     summarise(N_all_age = sum(N), I_all_age= sum(I))|>
     mutate(scenario = "Recovery", pop = as.numeric(i))|>
     mutate(status = "Unprotected") |>
-    mutate(status = ifelse(x < 60 & x > -110 & y > -80 & y < 120, "Buffer", status)) |> #0.7 effect
+    mutate(status = ifelse(x < 60 & x > -110 & y > -80 & y < 120, "Buffer", status)) |>
     mutate(status = ifelse(x < 50 & x > -100 & y > -70 & y < 110, "MPA", status))}
 
 # Spillover
@@ -56,7 +51,7 @@ for(i in seq_along(pop_dist_age_so_yt)){
   pop_dist_yellowtail_so[[i]] <- pop_dist_age_so_yt[[i]] |>
     group_by(cell, x, y, division, strat, year) |>
     summarise(N_all_age = sum(N), I_all_age = sum(I)) |>
-    mutate(scenario = "Spillover 0.5", pop = as.numeric(i))|>
+    mutate(scenario = "Spillover", pop = as.numeric(i))|>
     mutate(status = "Unprotected") |>
     mutate(status = ifelse(x < 60 & x > -110 & y > -80 & y < 120, "Buffer", status)) |>
     mutate(status = ifelse(x < 50 & x > -100 & y > -70 & y < 110, "MPA", status))}
@@ -115,7 +110,7 @@ for(i in seq_along(pop_dist_age_base_cod)){
     summarise(N_all_age = sum(N), I_all_age= sum(I))|>
     mutate(scenario = "Base", pop = as.numeric(i)) |>
     mutate(status = "Unprotected") |>
-    mutate(status = ifelse(x < 60 & x > -110 & y > -80 & y < 120, "Buffer", status)) |> #0.7 effect
+    mutate(status = ifelse(x < 60 & x > -110 & y > -80 & y < 120, "Buffer", status)) |>
     mutate(status = ifelse(x < 50 & x > -100 & y > -70 & y < 110, "MPA", status))}
 
 # Recovery
@@ -128,7 +123,7 @@ for(i in seq_along(pop_dist_age_rec_cod)){
     summarise(N_all_age = sum(N), I_all_age= sum(I))|>
     mutate(scenario = "Recovery", pop = as.numeric(i))|>
     mutate(status = "Unprotected") |>
-    mutate(status = ifelse(x < 60 & x > -110 & y > -80 & y < 120, "Buffer", status)) |> #0.5 effect
+    mutate(status = ifelse(x < 60 & x > -110 & y > -80 & y < 120, "Buffer", status)) |>
     mutate(status = ifelse(x < 50 & x > -100 & y > -70 & y < 110, "MPA", status))}
 
 # Spillover
@@ -139,7 +134,7 @@ for(i in seq_along(pop_dist_age_so_cod)){
   pop_dist_cod_so[[i]] <- pop_dist_age_so_cod[[i]] |>
     group_by(cell, x, y, division, strat, year) |>
     summarise(N_all_age = sum(N), I_all_age = sum(I)) |>
-    mutate(scenario = "Spillover 0.5", pop = as.numeric(i))|>
+    mutate(scenario = "Spillover", pop = as.numeric(i))|>
     mutate(status = "Unprotected") |>
     mutate(status = ifelse(x < 60 & x > -110 & y > -80 & y < 120, "Buffer", status)) |>
     mutate(status = ifelse(x < 50 & x > -100 & y > -70 & y < 110, "MPA", status))}
@@ -182,6 +177,9 @@ maps2 <- ggplot(combine_status|>
         axis.ticks = element_blank())
 
 maps2
+
 figure_rec_spill <- ggarrange(maps2, maps, ncol = 1, nrow = 2, legend = "bottom", common.legend = TRUE)
 
-ggsave("data/figure_rec_spill.pdf", plot = figure_rec_spill, width = 10, height = 6, units = "in", dpi = 500, bg = "white")
+figure_rec_spill
+
+ggsave("data/figure_rec_spill.pdf", plot = figure_rec_spill, width = 12, height = 8, units = "in", dpi = 500, bg = "white")
