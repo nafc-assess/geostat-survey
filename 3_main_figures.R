@@ -9,8 +9,8 @@ library(tidyverse)
 
 here()
 
-load(here("data2", "index_cod_all_scenarios_200L.Rdata"))
-load(here("data2", "index_yellowtail_all_scenarios_200L.Rdata"))
+load(here("data", "index_cod_all_scenarios_200L.Rdata"))
+load(here("data", "index_yellowtail_all_scenarios_200L.Rdata"))
 
 
 index_all_scenarios <- rbind(index_cod_all_scenarios, index_yellowtail_all_scenarios)
@@ -33,17 +33,17 @@ index_all_scenarios$scenario <- factor(index_all_scenarios$scenario, levels = c(
                                                                                 "Recovery",
                                                                                 "Recovery + Spillover"))
 
-#save(index_all_scenarios, file = "./data2/index_all_scenarios_200L.Rdata")
+#save(index_all_scenarios, file = "./data/index_all_scenarios_200L.Rdata")
 
-load(here("data2", "cell.Rdata"))
-load(here("data2", "strat.Rdata"))
+load(here("data", "cell.Rdata"))
+load(here("data", "strat.Rdata"))
 
-load(here("data2", "setdet_cod_base.Rdata"))
-load(here("data2", "setdet_cod_SR.Rdata"))
-load(here("data2", "setdet_cod_r30.Rdata"))
-load(here("data2", "setdet_cod_b30.Rdata"))
-load(here("data2", "setdet_cod_rec.Rdata"))
-load(here("data2", "setdet_cod_so.Rdata"))
+load(here("data", "setdet_cod_base.Rdata"))
+load(here("data", "setdet_cod_SR.Rdata"))
+load(here("data", "setdet_cod_r30.Rdata"))
+load(here("data", "setdet_cod_b30.Rdata"))
+load(here("data", "setdet_cod_rec.Rdata"))
+load(here("data", "setdet_cod_so.Rdata"))
 
 ######################### Creating a polygon for the MPA
 
@@ -201,7 +201,7 @@ so <- ggplot() +
 figure2 <- ggarrange(base, r30, sr, b30, rec, so, ncol = 6, nrow = 1, legend = "bottom", common.legend = TRUE)
 figure2
 
-ggsave("data2/figure2_samples.pdf", plot = figure2, width = 15, height = 4, units = "in", dpi = 500, bg = "white")
+ggsave("data/figure2_samples.pdf", plot = figure2, width = 15, height = 4, units = "in", dpi = 500, bg = "white")
 
 ######################### Figure 3: Example time series of estimated abundance indices
 
@@ -214,25 +214,24 @@ colour_pal <-  c("Bootstrapped" = "#FDBF6F",
                  "TW + Depth" = "#FB9A99",
                  "Bootstrapped" = "#FDBF6F")
 
-a <- ggplot() +
+cod_ts <- ggplot() +
   geom_line(data = index_all_scenarios |>
-              filter(pop == 1 | pop == 2 | pop == 3)|>
+              filter(pop == 1 | pop == 20)|>
               filter(species == "Cod-like") |>
               filter(type == "Bootstrapped" | type ==  "DG" | type == "DG + Depth"),
             aes(year, N, colour = type), linewidth = 1) +
   geom_ribbon(data = index_all_scenarios |>
-                filter(pop == 1 | pop == 2 | pop == 3)|>
+                filter(pop == 1 | pop == 20)|>
                 filter(species == "Cod-like") |>
                 filter(type == "Bootstrapped" | type ==  "DG" | type == "DG + Depth"),
               aes(x =  year, ymin = lwr, ymax = upr, fill = type), alpha = 0.1) +
   geom_line(data = index_all_scenarios |>
-              filter(pop == 1 | pop == 2 | pop == 3)|>
+              filter(pop == 1 | pop == 20)|>
               filter(species == "Cod-like"), aes(year, true), linewidth = 1) +
   labs(x = "Year", y = "N", colour = "Estimator", fill = "Estimator", size = "Estimator") +
   facet_grid(pop ~scenario, scales = "free_y", labeller = labeller(pop =
                                                                      c("1" = "Population 1",
-                                                                       "2" = "Population 2",
-                                                                       "3" = "Population 3"))) +
+                                                                       "20" = "Population 2"))) +
   scale_fill_manual(values = colour_pal[1:3]) +
   scale_colour_manual(values = colour_pal[1:3]) +
   theme_bw()+
@@ -241,25 +240,24 @@ a <- ggplot() +
         strip.background = element_rect(fill = "grey97")) +
   labs(title = "a) Cod-like")
 
-b <- ggplot() +
+yt_ts <- ggplot() +
   geom_line(data = index_all_scenarios |>
-              filter(pop == 1 | pop == 2 | pop == 3)|>
+              filter(pop == 110 | pop == 2)|>
               filter(species == "Yellowtail-like") |>
               filter(type == "Bootstrapped" | type == "DG" | type == "DG + Depth"),
             aes(year, N, colour = type), linewidth = 1) +
   geom_ribbon(data = index_all_scenarios |>
-                filter(pop == 1 | pop == 2 | pop == 3)|>
+                filter(pop == 110 | pop == 2)|>
                 filter(species == "Yellowtail-like") |>
                 filter(type == "Bootstrapped" | type == "DG" | type == "DG + Depth"),
               aes(x =  year, ymin = lwr, ymax = upr, fill = type), alpha = 0.1)+
   geom_line(data = index_all_scenarios |>
-              filter(pop == 1 | pop == 2 | pop == 3)|>
+              filter(pop == 110 | pop == 2)|>
               filter(species == "Yellowtail-like"), aes(year, true), linewidth = 1) +
   labs(x = "Year", y = "N", colour = "Estimator", fill = "Estimator", size = "Estimator") +
   facet_grid(pop ~scenario, scales = "free_y", labeller = labeller(pop =
-                                                                     c("1" = "Population 1",
-                                                                       "2" = "Population 2",
-                                                                       "3" = "Population 3"))) +
+                                                                     c("110" = "Population 1",
+                                                                       "2" = "Population 2"))) +
   scale_fill_manual(values = colour_pal[1:3]) +
   scale_colour_manual(values = colour_pal[1:3]) +
   theme_bw()+
@@ -268,10 +266,10 @@ b <- ggplot() +
         strip.background = element_rect(fill = "grey97")) +
   labs(title = "b) Yellowtail-like")
 
-figure3 <- ggarrange(a, b, ncol = 1, nrow = 2, legend = "bottom", common.legend = TRUE)
+figure3 <- ggarrange(cod_ts, yt_ts, ncol = 1, nrow = 2, legend = "bottom", common.legend = TRUE)
 figure3
 
-ggsave("data2/figure3_timeseries.pdf", plot = figure3, width = 12, height = 10, units = "in", dpi = 500, bg = "white")
+ggsave("data/figure3_timeseries.pdf", plot = figure3, width = 12, height = 8, units = "in", dpi = 500, bg = "white")
 
 ######################### Figure 4: Distributions of root mean squared log error (RMSLE) and mean relative error (MRE)
 
@@ -301,8 +299,8 @@ rmse_plot <- metrics_mean |>
   geom_violin(data = index_all_scenarios_accuracy_long |> filter(name == "RMSE"),
               aes(x =  value, y =  type, col = type), alpha = 0.5) +
   geom_point(aes(), colour = "black", size = 1) +
-  facet_grid(species ~ scenario) +
-  #facet_grid(species ~ scenario, scales = "free") +
+  #facet_grid(species ~ scenario) +
+  facet_grid(species ~ scenario, scales = "free") +
   theme_bw() +
   scale_color_manual(values = c("DG" = "#1F78B4",
                                 "DG + Depth" = "#A6CEE3",
@@ -326,8 +324,8 @@ mre_plot <- metrics_mean |>
   geom_violin(data = index_all_scenarios_accuracy_long |> filter(name == "MRE"),
               aes(x =  value, y =  type, col = type), alpha = 0.5) +
   geom_point(aes(), colour = "black", size = 1) +
-  facet_grid(species ~ scenario) +
-  #facet_grid(species ~ scenario, scales = "free") +
+  #facet_grid(species ~ scenario) +
+  facet_grid(species ~ scenario, scales = "free") +
   theme_bw() +
   scale_color_manual(values = c("DG" = "#1F78B4",
                                 "DG + Depth" = "#A6CEE3",
@@ -350,9 +348,7 @@ figure4_performance <- ggarrange(rmse_plot, mre_plot, ncol = 1, nrow = 2, legend
 figure4_performance
 
 #APX_figure4_performance
-ggsave("data2/figure4_performance.pdf", plot = figure4_performance, width = 12, height = 10, units = "in", dpi = 500, bg = "white")
-ggsave("data2/APX_figure4_performance.pdf", plot = APX_figure4_performance, width = 12, height = 10, units = "in", dpi = 500, bg = "white")
-
+ggsave("data/figure4_performance.pdf", plot = figure4_performance, width = 12, height = 10, units = "in", dpi = 500, bg = "white")
 
 ################# Figure 5: Coverage of the 95% confidence intervals
 
@@ -428,7 +424,4 @@ figure5_CI <- ggarrange(CI_coverage_plot, CI_width_plot, ncol = 1, nrow = 2, leg
 figure5_CI
 
 
-ggsave("data2/figure5_CI.pdf", plot = figure5_CI, width = 12, height = 10, units = "in", dpi = 500, bg = "white")
-
-
-
+ggsave("data/figure5_CI.pdf", plot = figure5_CI, width = 12, height = 10, units = "in", dpi = 500, bg = "white")
