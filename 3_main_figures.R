@@ -273,7 +273,6 @@ ggsave("data/figure3_timeseries.pdf", plot = figure3, width = 12, height = 8, un
 
 ######################### Figure 4: Distributions of root mean squared log error (RMSLE) and mean relative error (MRE)
 
-
 index_all_scenarios_accuracy <-
   index_all_scenarios |>
   filter(year > 10) |>
