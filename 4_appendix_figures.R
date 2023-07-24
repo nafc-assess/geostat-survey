@@ -15,21 +15,26 @@ library(raster)
 library(here)
 
 ## Loading the data
-load(here("Data", "cell.Rdata"))
-load(here("Data", "strat.Rdata"))
-load(here("Data", "survey_cod_base.Rdata"))
-load(here("Data", "sdm_data_cod_SR.Rdata"))
-load(here("Data", "sdm_newdata_cod.Rdata"))
-load(here("Data", "mesh_sdm_cod_SR.Rdata"))
-load(here("Data", "setdet_yellowtail_SR.Rdata"))
-load(here("Data", "survey_yellowtail_base.Rdata"))
-load(here("Data", "sdm_data_yellowtail_SR.Rdata"))
-load(here("Data", "sdm_newdata_yellowtail.Rdata"))
-load(here("Data", "mesh_sdm_yellowtail_SR.Rdata"))
-load(here("Data", "setdet_cod_SR.Rdata"))
-load(here("Data", "index_all_scenarios.Rdata"))
+load(here("data", "cell.Rdata")) #
+load(here("data", "strat.Rdata"))#
+
+load(here("data", "survey_cod_base.Rdata")) #
+load(here("data", "sdm_data_cod_SR.Rdata"))#
+load(here("data", "sdm_newdata_cod.Rdata"))#
+load(here("data", "mesh_sdm_cod_SR.Rdata"))#
+load(here("data", "setdet_cod_SR.Rdata"))#
+
+load(here("data", "setdet_yellowtail_SR.Rdata"))
+load(here("data", "survey_yellowtail_base.Rdata"))
+load(here("data", "sdm_data_yellowtail_SR.Rdata"))
+load(here("data", "sdm_newdata_yellowtail.Rdata"))
+load(here("data", "mesh_sdm_yellowtail_SR.Rdata"))
+
+load(here("data", "index_all_scenarios_200L.Rdata")) #
 
 ######################## Figure S1: Depth profile + species depth preferences
+
+# Figure S1: Depth profile of the study area and the depth preferences of the simulated cod-like and yellow-tail species.
 
 grid <- make_grid(x_range = c(-150, 150),
                   y_range = c(-150, 150),
@@ -48,7 +53,7 @@ yt_depth <- sim_parabola(mu = log(90),
                          #sigma_right = 0.20,
                          log_space = TRUE)
 
-xyz <- as.data.frame(grid) |> cbind(coordinates(grid))
+xyz <- as.data.frame(grid)
 
 (profile <- ggplot(data = xyz) +
     geom_ribbon(aes(x = x, ymin = max(depth), ymax = depth), fill = "grey60", color = "grey50") +
@@ -84,7 +89,7 @@ FigureS_depth <- profile + parabola +
 
 FigureS_depth
 
-ggsave("FigureS_depth.pdf", plot = FigureS_depth, width = 8, height = 6, units = "in", dpi = 500, bg = "white")
+ggsave("data/FigureS_depth.pdf", plot = FigureS_depth, width = 8, height = 6, units = "in", dpi = 500, bg = "white")
 
 ######################## Figure S2 Cod-like species maps
 
@@ -317,16 +322,16 @@ FigureS_cod_maps <- ggarrange(a, a2, b, c, ncol = 1, nrow = 4, legend = "bottom"
 
 FigureS_cod_maps
 
-ggsave("FigureS_cod_maps.pdf", plot = FigureS_cod_maps, width = 10, height = 12, units = "in", dpi = 500, bg="white")
+ggsave("data/FigureS_cod_maps.pdf", plot = FigureS_cod_maps, width = 10, height = 12, units = "in", dpi = 500, bg="white")
 
 ######################## Figure S3 Yellowtail-like species maps
 
 ## Delta-gamma model
 
 sdm_DG_IID_dg_yt <- sdmTMB(count ~ 0 + as.factor(year),
-                           data = sdm_data_yellowtail_SR[[1]],
-                           mesh = mesh_sdm_yellowtail_SR[[1]],
-                           offset = sdm_data_yellowtail_SR[[1]]$offset,
+                           data = sdm_data_yellowtail_SR[[110]],
+                           mesh = mesh_sdm_yellowtail_SR[[110]],
+                           offset = sdm_data_yellowtail_SR[[110]]$offset,
                            time = "year",
                            family = delta_gamma(),
                            spatial = TRUE,
@@ -343,7 +348,7 @@ sdm_DG_IID_dg_pred_yt <- predict(sdm_DG_IID_dg_yt,
 
 dg_table_yt <- index_all_scenarios |>
   filter(year > 10 & year < 16) |>
-  filter(pop == 1) |>
+  filter(pop == 110) |>
   filter(type == "DG") |>
   filter(scenario == "Strata removal") |>
   filter(species == "Yellowtail-like") |>
@@ -355,9 +360,9 @@ formula1 = count ~ 0 + as.factor(year)
 formula2 = count ~ 0 + as.factor(year) + poly(log(depth), 2)
 
 sdm_DG_IID_dg_depth_yt <- sdmTMB(list(formula1, formula2),
-                                 data = sdm_data_yellowtail_SR[[1]],
-                                 mesh = mesh_sdm_yellowtail_SR[[1]],
-                                 offset = sdm_data_yellowtail_SR[[1]]$offset,
+                                 data = sdm_data_yellowtail_SR[[110]],
+                                 mesh = mesh_sdm_yellowtail_SR[[110]],
+                                 offset = sdm_data_yellowtail_SR[[110]]$offset,
                                  time = "year",
                                  family = delta_gamma(),
                                  spatial = TRUE,
@@ -374,7 +379,7 @@ sdm_DG_IID_dg_pred_depth_yt <-  predict(sdm_DG_IID_dg_depth_yt,
 
 dg_table_depth_yt <- index_all_scenarios |>
   filter(year > 10 & year < 16) |>
-  filter(pop == 1) |>
+  filter(pop == 110) |>
   filter(type == "DG + Depth") |>
   filter(scenario == "Strata removal") |>
   filter(species == "Yellowtail-like") |>
@@ -419,7 +424,7 @@ strat <- merge(strat, Years, all=TRUE)
 blocked_strat <- strat |>
   filter(strat %in% c(2,3,4,5,17,18,19,20))
 
-yt_sr <- sumYst(setdet_yellowtail_SR[[1]])
+yt_sr <- sumYst(setdet_yellowtail_SR[[110]])
 strat_yt_sr <- full_join(strat, yt_sr)
 
 design_table_yt <- strat_yt_sr |>
@@ -551,15 +556,92 @@ FigureS_yt_maps <- ggarrange(a, a2, b, c, ncol = 1, nrow = 4, legend = "bottom",
 
 FigureS_yt_maps
 
-ggsave("FigureS_yt_maps.pdf", plot = FigureS_yt_maps, width = 10, height = 12, units = "in", dpi = 500, bg="white")
+ggsave("data/FigureS_yt_maps.pdf", plot = FigureS_yt_maps, width = 10, height = 12, units = "in", dpi = 500, bg="white")
+
+######################## Figure S3
+
+index_all_scenarios_accuracy <-
+  index_all_scenarios |>
+  filter(year > 10) |>
+  ungroup() |>
+  filter(type !=  "Bootstrapped") |>
+  filter(type !=  "Design-based" | scenario !=  "Strata removal") |>
+  group_by(pop, type, scenario, species) |>
+  summarise(MRE = mean((N - true) / true),
+            RMSE =  sqrt(mean((log(N) - log(true))^2)))
 
 
-######################## Figure S4 Yellowtail-like species maps
+index_all_scenarios_accuracy_long <- index_all_scenarios_accuracy |>
+  pivot_longer(-c(type, pop, scenario, species))
+
+metrics_mean <- index_all_scenarios_accuracy_long |>
+  group_by(name, type, species, scenario) |>
+  summarise(m = mean(value))
+
+rmse_plot <- metrics_mean |>
+  filter(name == "RMSE") |>
+  ggplot(aes(x =  m, y =  type)) +
+  geom_vline(xintercept = 0, linetype = 2) +
+  geom_violin(data = index_all_scenarios_accuracy_long |> filter(name == "RMSE"),
+              aes(x =  value, y =  type, col = type), alpha = 0.5) +
+  geom_point(aes(), colour = "black", size = 1) +
+  #facet_grid(species ~ scenario) +
+  facet_grid(species ~ scenario, scales = "free") +
+  theme_bw() +
+  scale_color_manual(values = c("DG" = "#1F78B4",
+                                "DG + Depth" = "#A6CEE3",
+                                "NB" = "#33A02C",
+                                "NB + Depth" =  "#B2DF8A",
+                                "TW" = "#E31A1C",
+                                "TW + Depth" = "#FB9A99",
+                                "Design-based" = "#FDBF6F")) +
+  theme(legend.position = NULL) +
+  labs(x = "RMSE", y = "", colour = "Estimator", fill = "Estimator") +
+  theme(text = element_text(size = 14)) +
+  theme(strip.background = element_rect(fill = "grey97")) +
+  labs(title = "a) Root mean square error") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+#xlim(NA, 2.5)
+
+mre_plot <- metrics_mean |>
+  filter(name == "MRE") |>
+  ggplot(aes(x =  m, y =  type)) +
+  geom_vline(xintercept = 0, linetype = 2) +
+  geom_violin(data = index_all_scenarios_accuracy_long |> filter(name == "MRE"),
+              aes(x =  value, y =  type, col = type), alpha = 0.5) +
+  geom_point(aes(), colour = "black", size = 1) +
+  #facet_grid(species ~ scenario) +
+  facet_grid(species ~ scenario, scales = "free") +
+  theme_bw() +
+  scale_color_manual(values = c("DG" = "#1F78B4",
+                                "DG + Depth" = "#A6CEE3",
+                                "NB" = "#33A02C",
+                                "NB + Depth" =  "#B2DF8A",
+                                "TW" = "#E31A1C",
+                                "TW + Depth" = "#FB9A99",
+                                "Design-based" = "#FDBF6F")) +
+  theme(legend.position =  NULL) +
+  labs(x = "MRE", y = "", colour = "Estimator", fill = "Estimator") +
+  theme(text = element_text(size = 14)) +
+  theme(strip.background = element_rect(fill = "grey97")) +
+  #xlim(-1, 2) +
+  labs(title = "b) Mean relative error") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+
+
+APX_figure4_performance <- ggarrange(rmse_plot, mre_plot, ncol = 1, nrow = 2, legend = "none")
+APX_figure4_performance
+
+ggsave("data/APX_figure4_performance.pdf", plot = APX_figure4_performance, width = 12, height = 10, units = "in", dpi = 500, bg = "white")
+
+
+######################## Figure S5 Trend in bias
 
 data_reg <- index_all_scenarios |>
   arrange(species, pop, type, scenario, year) |>
   group_by(species, pop, type, scenario) |>
-  mutate(re = (log(N) - log(true))/ log(true))
+  mutate(re = (N - true)/ true)
 
 all_regress <-  data_reg |>
   group_by(species, pop, sim, type, scenario) %>%
@@ -617,7 +699,7 @@ trend_bias_cod <- result_table |>
   labs(x = "Slope of ln(RE) ~ year", y = "", colour = "Estimator", fill = "Estimator")+
   theme(text = element_text(size = 14))+
   theme(strip.background =element_rect(fill="grey97"))+
-  labs(title = "a) Cod-like species")
+  labs(title = "a) Cod-like species") + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 
 trend_bias_yt <- result_table |>
   filter(!type=="Bootstrapped") |>
@@ -644,13 +726,13 @@ trend_bias_yt <- result_table |>
   labs(x = "Slope of ln(RE) ~ year", y = "", colour = "Estimator", fill = "Estimator")+
   theme(text = element_text(size = 14))+
   theme(strip.background =element_rect(fill="grey97"))+
-  labs(title = "b) Yellowtail-like species")
+  labs(title = "b) Yellowtail-like species") + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 
 FigureS_trend_bias <- ggarrange(trend_bias_cod, trend_bias_yt, ncol = 1, nrow = 2, legend = "none")
 
 FigureS_trend_bias
 
-ggsave("FigureS_trend_bias.pdf", plot = FigureS_trend_bias, width = 10, height = 6, units = "in", dpi = 500)
+ggsave("data/FigureS_trend_bias.pdf", plot = FigureS_trend_bias, width = 10, height = 6, units = "in", dpi = 500)
 
 ######################## Figure S5 delta-AIC
 
@@ -685,7 +767,7 @@ a <- AIC_w_best |>
   geom_violin(aes(y = reorder(type.x, desc(dAIC)), x = dAIC, fill = type.x), colour= NA) +
   #geom_point(data = AIC_w_best |> filter(species == "Cod-like"),
   #aes(x = reorder(type.x, desc(dAIC)), y = dAIC))+
-  facet_grid( ~ scenario, scales = "free_y")+
+  facet_grid( ~ scenario)+
   theme_bw()+
   scale_fill_manual(values = c("DG" = "#1F78B4",
                                "DG + Depth" = "#A6CEE3",
@@ -696,7 +778,7 @@ a <- AIC_w_best |>
   labs(y = "") +
   theme(text = element_text(size = 14))+
   theme(strip.background = element_rect(fill = "grey97")) +
-  labs(title = "a) Cod-like species")
+  labs(title = "a) Cod-like species")+ theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 
 b <- AIC_w_best |>
   filter(type.x != "NB + Depth") |>
@@ -705,7 +787,7 @@ b <- AIC_w_best |>
   geom_violin(aes(y = reorder(type.x, desc(dAIC)), x = dAIC, fill = type.x), colour= NA) +
   #geom_point(data = AIC_w_best |> filter(species == "Cod-like"),
   #aes(x = reorder(type.x, desc(dAIC)), y = dAIC))+
-  facet_grid( ~ scenario, scales = "free_y")+
+  facet_grid( ~ scenario)+
   theme_bw()+
   scale_fill_manual(values = c("DG" = "#1F78B4",
                                "DG + Depth" = "#A6CEE3",
@@ -716,15 +798,15 @@ b <- AIC_w_best |>
   labs(y = "") +
   theme(text = element_text(size = 14))+
   theme(strip.background = element_rect(fill = "grey97"))+
-  labs(title = "b) Yellowtail-like species")
+  labs(title = "b) Yellowtail-like species") + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 
 dAIC <- ggarrange(a, b, ncol = 1, nrow = 2, legend = "none")
 
 dAIC
 
-ggsave("FigureS_dAIC.pdf", plot = dAIC, width = 10, height = 8, units = "in", dpi = 500, bg = "white")
+ggsave("data/FigureS_dAIC.pdf", plot = dAIC, width = 10, height = 8, units = "in", dpi = 500, bg = "white")
 
-######################## Figure S6 and S7 Yellowtail-like a model results
+######################## Figure S7 and S8 Yellowtail-like a model results
 
 yt_nb_sr <- sdmTMB(count ~ 0 + as.factor(year),
                    data = sdm_data_yellowtail_SR[[60]],
@@ -849,7 +931,7 @@ nb_depth <- ggplot(yt_models_year12 |> filter(type == "NB + Depth")) +
 FigureS_RF <- ggarrange(nb, nb_depth, ncol = 1, nrow = 2, common.legend = TRUE, legend = "bottom")
 FigureS_RF
 
-ggsave("FigureS_RF.pdf", plot = FigureS_RF, width = 10, height = 8, units = "in", dpi = 500, bg = "white")
+ggsave("data/FigureS_RF.pdf", plot = FigureS_RF, width = 10, height = 8, units = "in", dpi = 500, bg = "white")
 
 ######################## Figure S7 Estimates with fix and random effects
 
@@ -931,4 +1013,4 @@ FigureS_st_maps <- ggarrange(a + rremove("ylab") + rremove("xlab"),
 
 FigureS_st_maps
 
-ggsave("FigureS_st_maps.pdf", plot = FigureS_st_maps, width = 10, height = 12, units = "in", dpi = 500, bg = "white")
+ggsave("data/FigureS_st_maps.pdf", plot = FigureS_st_maps, width = 10, height = 12, units = "in", dpi = 500, bg = "white")
