@@ -24,6 +24,7 @@ source("./data_prep_fn.R")
 Sys.getenv("OMP_THREAD_LIMIT")
 
 ITER <- 200L
+
 ############               #############
 
             # BASE SCENARIO
@@ -38,7 +39,7 @@ set.seed(1)
 survey_yellowtail <- furrr::future_map(seq_len(ITER), n_sims = 1, population_yellowtail, .options = furrr::furrr_options(seed = TRUE, packages = "SimSurvey"))
 gc()
 
-#save(survey_yellowtail, file = "./data/survey_yellowtail_base.Rdata")
+save(survey_yellowtail, file = "./data/survey_yellowtail_base.Rdata")
 
 ############# True abundance
 
@@ -67,7 +68,7 @@ for( i in seq_along(setdet_yellowtail)){
 
 setdet_yellowtail <- lapply(setdet_yellowtail, function(x) split(x, x$sim)) |> flatten()
 
-#save(setdet_yellowtail, file = "./data/setdet_yellowtail_base.Rdata")
+save(setdet_yellowtail, file = "./data/setdet_yellowtail_base.Rdata")
 
 ############# Bootstrapped index
 
@@ -85,6 +86,8 @@ sdm_data_yellowtail <- purrr::map(setdet_yellowtail, sdm_data_fn)
 mesh_sdm_yellowtail <- purrr::map(sdm_data_yellowtail, mesh_sdm_fn, existing_mesh = inla_mesh)
 
 sdm_newdata_yellowtail <- sdm_newdata_fn(survey_yellowtail[[1]], sdm_data_yellowtail[[1]]) ### since all populations has the same prediction area, newdata is same for all.
+
+save(sdm_newdata_yellowtail, file = "./data/sdm_newdata_yellowtail.Rdata")
 
 ### Models
 
@@ -271,6 +274,7 @@ for(i in seq_along(setdet_yellowtail_SR)){
 }
 
 setdet_yellowtail_SR <- lapply(setdet_yellowtail_SR, function(x) split(x, x$sim)) |> flatten()
+save(setdet_yellowtail_SR, file = "./data/setdet_yellowtail_SR.Rdata")
 
 ############# Bootstrapped index
 
@@ -283,8 +287,11 @@ boot_index_yellowtail_SR <- furrr::future_map_dfr(setdet_yellowtail_SR, boot_wra
 
 sdm_data_yellowtail_SR <- purrr::map(setdet_yellowtail_SR, sdm_data_fn)
 
+save(sdm_data_yellowtail_SR, file = "./data/sdm_data_yellowtail_SR.Rdata")
+
 mesh_sdm_yellowtail_SR  <- purrr::map(sdm_data_yellowtail_SR, mesh_sdm_fn, existing_mesh = inla_mesh)
 
+save(mesh_sdm_yellowtail_SR, file = "./data/mesh_sdm_yellowtail_SR.Rdata")
 
 ### IID + NB2
 sdm_NB2_IID_index_yellowtail_SR  <- furrr::future_map2_dfr(sdm_data_yellowtail_SR, mesh_sdm_yellowtail_SR,
@@ -424,6 +431,8 @@ set.seed(1)
 survey_yellowtail_rec <- furrr::future_map(seq_len(ITER), n_sims = 1, population_yellowtail_recovery, .options = furrr::furrr_options(seed = TRUE, packages = "SimSurvey"))
 gc()
 
+save(survey_yellowtail_rec, file = "./data/survey_yellowtail_rec.Rdata")
+
 ############# True abundance
 
 true_yellowtail_rec <- map_df(seq_along(survey_yellowtail_rec),function(i){
@@ -534,6 +543,8 @@ message("RECOVERY WITH SPILLOVER EFFECT")
 set.seed(1)
 survey_yellowtail_so <- furrr::future_map(seq_len(ITER), n_sims = 1, population_yellowtail_spillover, .options = furrr::furrr_options(seed = TRUE, packages = "SimSurvey"))
 gc()
+
+save(survey_yellowtail_so, file = "./data/survey_yellowtail_so.Rdata")
 
 ############# True abundance
 
