@@ -40,7 +40,7 @@ set.seed(1)
 survey_cod <- furrr::future_map(seq_len(ITER), n_sim = 1, population_cod, .options = furrr::furrr_options(seed = TRUE, packages = "SimSurvey"))
 gc()
 
-#save(survey_cod, file = "./data/survey_cod_base.Rdata")
+save(survey_cod, file = "./data/survey_cod_base.Rdata")
 
 ############# True abundance
 
@@ -68,7 +68,7 @@ for( i in seq_along(setdet_cod)){
 
 setdet_cod <- lapply(setdet_cod, function(x) split(x, x$sim)) |> flatten()
 
-#save(setdet_cod, file = "./data/setdet_cod_base.Rdata")
+save(setdet_cod, file = "./data/setdet_cod_base.Rdata")
 
 ############# Bootstrapped index
 
@@ -88,7 +88,7 @@ mesh_sdm_cod <- purrr::map(sdm_data_cod, mesh_sdm_fn, existing_mesh = inla_mesh)
 
 sdm_newdata_cod <- sdm_newdata_fn(survey_cod[[1]], sdm_data_cod[[1]]) ### since all populations has the same prediction area, newdata is same for all.
 
-#save(sdm_newdata_cod, file = "./data/sdm_newdata_cod.Rdata")
+save(sdm_newdata_cod, file = "./data/sdm_newdata_cod.Rdata")
 
 ### Models
 
@@ -271,7 +271,7 @@ for(i in seq_along(setdet_cod_SR)){
 
 setdet_cod_SR <- lapply(setdet_cod_SR, function(x) split(x, x$sim)) |> flatten()
 
-#save(setdet_cod_SR, file = "./data/setdet_cod_SR.Rdata")
+save(setdet_cod_SR, file = "./data/setdet_cod_SR.Rdata")
 
 ############# Bootstrapped index
 
@@ -283,10 +283,10 @@ boot_index_cod_SR <- furrr::future_map_dfr(setdet_cod_SR, boot_wrapper, reps=100
 ### Data prep
 
 sdm_data_cod_SR <- furrr::future_map(setdet_cod_SR, sdm_data_fn)
-#save(sdm_data_cod_SR, file = "./data/sdm_data_cod_SR.Rdata")
+save(sdm_data_cod_SR, file = "./data/sdm_data_cod_SR.Rdata")
 
 mesh_sdm_cod_SR  <- purrr::map(sdm_data_cod_SR, mesh_sdm_fn, existing_mesh = inla_mesh)
-#save(mesh_sdm_cod_SR, file = "./data/mesh_sdm_cod_SR.Rdata")
+save(mesh_sdm_cod_SR, file = "./data/mesh_sdm_cod_SR.Rdata")
 
 ### IID + NB2
 sdm_NB2_IID_index_cod_SR  <- furrr::future_map2_dfr(sdm_data_cod_SR, mesh_sdm_cod_SR,
@@ -429,7 +429,7 @@ message("RECOVERY SCENARIO")
 set.seed(1)
 survey_cod_rec <- furrr::future_map(seq_len(ITER), n_sims = 1, population_cod_recovery, .options = furrr::furrr_options(seed = TRUE, packages = "SimSurvey"))
 gc()
-#save(survey_cod_rec, file = "./data/survey_cod_rec.Rdata")
+save(survey_cod_rec, file = "./data/survey_cod_rec.Rdata")
 
 ############# True abundance
 
@@ -546,7 +546,7 @@ set.seed(1)
 survey_cod_so <- furrr::future_map(seq_len(ITER), n_sim = 1, population_cod_spillover, .options = furrr::furrr_options(seed = TRUE, packages = "SimSurvey"))
 gc()
 
-#save(survey_cod_so, file = "./data/survey_cod_so_05.Rdata")
+save(survey_cod_so, file = "./data/survey_cod_so.Rdata")
 
 ############# True abundance
 
@@ -655,5 +655,3 @@ sdm_DG_IID_depth_index_cod_so <- furrr::future_map2_dfr(sdm_data_cod_so, mesh_sd
 index_cod_all_scenarios <- do.call(bind_rows, mget(ls(pattern = "index")))
 index_cod_all_scenarios <- merge(index_cod_all_scenarios, true_cod, by=c("pop", "year", "species"))
 save(index_cod_all_scenarios, file = "./data/index_cod_all_scenarios.Rdata")
-
-Sys.time()
