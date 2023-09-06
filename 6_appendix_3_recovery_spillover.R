@@ -14,13 +14,13 @@ library(sf)
 library(ggpubr)
 
 # Load data
-load((here("data", "survey_yellowtail_base.Rdata")))
-load((here("data", "survey_yellowtail_rec.Rdata")))
-load((here("data", "survey_yellowtail_so.Rdata")))
+load((here("data", "survey_yellowtail_base.Rdata"))) # can be found on Zenodo
+load((here("data", "survey_yellowtail_rec.Rdata"))) # can be found on Zenodo
+load((here("data", "survey_yellowtail_so.Rdata"))) # can be found on Zenodo
 
-load((here("data", "survey_cod_base.Rdata")))
-load((here("data", "survey_cod_rec.Rdata")))
-load((here("data", "survey_cod_so.Rdata")))
+load((here("data", "survey_cod_base.Rdata"))) # can be found on Zenodo
+load((here("data", "survey_cod_rec.Rdata"))) # can be found on Zenodo
+load((here("data", "survey_cod_so.Rdata"))) # can be found on Zenodo
 
 ##### Yellowtail maps
 # Base
