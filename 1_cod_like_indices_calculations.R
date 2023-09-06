@@ -19,7 +19,7 @@ library(ggpubr)
 #plan(multisession)
 plan(multisession, workers = 10L)
 
-ITER <- 200L
+ITER <- 200L # iteration number
 
 # Load necessary functions
 source("./pop_cod_fn.R")

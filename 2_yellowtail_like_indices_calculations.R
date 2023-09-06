@@ -1,6 +1,12 @@
-# Yellowtail-like species design and model based indices calculation
+# ------------------------------------------------------------------------
+# This R code demonstrates the methods
+# Yellowtail-like species design and model based indices calculation,
+# as described in:
+# Yalcin et al. (2023). "Exploring the limits of spatiotemporal and design-based index standardization under reduced survey coverage."
+# ICES JMS. doi:
+# ------------------------------------------------------------------------
 
-#############  Packages
+# Load necessary libraries
 library(SimSurvey)
 library(sdmTMB)
 library(tidyr)
@@ -10,10 +16,12 @@ library(data.table)
 library(dplyr)
 library(purrr)
 library(ggpubr)
-# plan(multisession)
+#plan(multisession)
 plan(multisession, workers = 10L)
 
-### Load functions
+ITER <- 200L # iteration number
+
+# Load necessary functions
 source("./pop_yellowtail_fn.R")
 source("./model_run_fn.R")
 source("./bootstrapping_fn.R")
@@ -23,13 +31,12 @@ source("./data_prep_fn.R")
 # usethis::edit_r_environ()
 Sys.getenv("OMP_THREAD_LIMIT")
 
-ITER <- 200L
 
-############               #############
+# ------------------------------------------------------------------------
 
-            # BASE SCENARIO
+# Scenario 1: BASE SCENARIO #
 
-#############               #############
+# ------------------------------------------------------------------------
 
 message("BASE SCENARIO")
 
@@ -39,7 +46,7 @@ set.seed(1)
 survey_yellowtail <- furrr::future_map(seq_len(ITER), n_sims = 1, population_yellowtail, .options = furrr::furrr_options(seed = TRUE, packages = "SimSurvey"))
 gc()
 
-save(survey_yellowtail, file = "./data/survey_yellowtail_base.Rdata")
+#save(survey_yellowtail, file = "./data/survey_yellowtail_base.Rdata")
 
 ############# True abundance
 
@@ -87,7 +94,7 @@ mesh_sdm_yellowtail <- purrr::map(sdm_data_yellowtail, mesh_sdm_fn, existing_mes
 
 sdm_newdata_yellowtail <- sdm_newdata_fn(survey_yellowtail[[1]], sdm_data_yellowtail[[1]]) ### since all populations has the same prediction area, newdata is same for all.
 
-save(sdm_newdata_yellowtail, file = "./data/sdm_newdata_yellowtail.Rdata")
+#save(sdm_newdata_yellowtail, file = "./data/sdm_newdata_yellowtail.Rdata")
 
 ### Models
 
@@ -116,11 +123,11 @@ sdm_DG_IID_depth_index_yellowtail <- furrr::future_map2_dfr(sdm_data_yellowtail,
                                                             formula = list(formula1, formula2), range_gt = 125, sigma_lt = 12.5, type = "DG + Depth", scenario = "Base",
                                                             species = "Yellowtail-like", newdata = sdm_newdata_yellowtail, model_run_DG, .id = "model", .progress = TRUE)
 
-#############                          #############
+# ------------------------------------------------------------------------
 
-           # SET DENSITY REDUCTION SCENARIO
+# Scenario 2: SET DENSITY REDUCTION #
 
-#############                          #############
+# ------------------------------------------------------------------------
 
 message("SET DENSITY REDUCTION SCENARIO")
 # Subsetting the sets by year
@@ -215,11 +222,11 @@ sdm_DG_IID_depth_index_yellowtail_r30 <- furrr::future_map2_dfr(sdm_data_yellowt
                                                             formula = list(formula1, formula2), range_gt = 125, sigma_lt = 12.5, type = "DG + Depth", scenario = "Set reduction",
                                                             species = "Yellowtail-like", newdata = sdm_newdata_yellowtail, model_run_DG, .id = "model", .progress = TRUE)
 
-#############               #############
+# ------------------------------------------------------------------------
 
-        # STRATA REMOVAL SCENARIO
+# Scenario 3: STRATA REMOVAL SCENARIO
 
-#############               #############
+# ------------------------------------------------------------------------
 
 message("STRATA REMOVAL SCENARIO")
 
@@ -320,11 +327,11 @@ sdm_DG_IID_depth_index_yellowtail_SR <- furrr::future_map2_dfr(sdm_data_yellowta
                                                             species = "Yellowtail-like", newdata = sdm_newdata_yellowtail, model_run_DG, .id = "model", .progress = TRUE)
 
 
-#############                           #############
+# ------------------------------------------------------------------------
 
-           # AREA BLOCKED REDUCTION SCENARIO
+# Scenario 4: AREA BLOCKED REDUCTION SCENARIO
 
-#############                           #############
+# ------------------------------------------------------------------------
 
 message("AREA BLOCKED REDUCTION SCENARIO")
 
@@ -417,11 +424,11 @@ sdm_DG_IID_depth_index_yellowtail_b30 <- furrr::future_map2_dfr(sdm_data_yellowt
                                                                   species = "Yellowtail-like", newdata = sdm_newdata_yellowtail, model_run_DG, .id = "model", .progress = TRUE)
 
 
-#############                           #############
+# ------------------------------------------------------------------------
 
 # Scenario 5: RECOVERY
 
-#############                           #############
+# ------------------------------------------------------------------------
 
 message("RECOVERY SCENARIO")
 
@@ -527,14 +534,12 @@ sdm_DG_IID_index_yellowtail_rec <- furrr::future_map2_dfr(sdm_data_yellowtail_re
 sdm_DG_IID_depth_index_yellowtail_rec <- furrr::future_map2_dfr(sdm_data_yellowtail_rec, mesh_sdm_yellowtail_rec,
                                                                 formula = list(formula1, formula2), range_gt = 125, sigma_lt = 12.5, type = "DG + Depth", scenario = "Recovery",
                                                                 species = "Yellowtail-like", newdata = sdm_newdata_yellowtail, model_run_DG, .id = "model", .progress = TRUE)
-#############
 
-
-#############                           #############
+# ------------------------------------------------------------------------
 
 # Scenario 6: RECOVERY WITH SPILLOVER EFFECT
 
-#############                           #############
+# ------------------------------------------------------------------------
 
 message("RECOVERY WITH SPILLOVER EFFECT")
 
@@ -641,11 +646,11 @@ sdm_DG_IID_depth_index_yellowtail_so <- furrr::future_map2_dfr(sdm_data_yellowta
                                                                formula = list(formula1, formula2), range_gt = 125, sigma_lt = 12.5, type = "DG + Depth", scenario = "Recovery + Spillover",
                                                                species = "Yellowtail-like", newdata = sdm_newdata_yellowtail, model_run_DG, .id = "model", .progress = TRUE)
 
-#############               #############
+# ------------------------------------------------------------------------
 
 # COMBINING ALL RESULTS
 
-#############               #############
+# ------------------------------------------------------------------------
 
 index_yellowtail_all_scenarios <- do.call(bind_rows, mget(ls(pattern = "index")))
 index_yellowtail_all_scenarios <- merge(index_yellowtail_all_scenarios, true_yellowtail, by=c("pop", "year", "species"))
