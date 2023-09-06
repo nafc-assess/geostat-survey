@@ -3,6 +3,7 @@
 # Plotting the Appendix 1 – Additional figures in:
 # Yalcin et al. (2023). "Exploring the limits of spatiotemporal and design-based index standardization under reduced survey coverage."
 # ICES JMS. doi:
+# Zenodo: doi:
 # ------------------------------------------------------------------------
 
 # Load necessary libraries
@@ -23,17 +24,17 @@ library(here)
 load(here("data", "cell.Rdata"))
 load(here("data", "strat.Rdata"))
 
-load(here("data", "survey_cod_base.Rdata"))
-load(here("data", "sdm_data_cod_SR.Rdata"))
-load(here("data", "sdm_newdata_cod.Rdata"))
-load(here("data", "mesh_sdm_cod_SR.Rdata"))
+load(here("data", "survey_cod_base.Rdata")) # can be found on Zenodo
+load(here("data", "sdm_data_cod_SR.Rdata")) # can be found on Zenodo
+load(here("data", "sdm_newdata_cod.Rdata")) # can be found on Zenodo
+load(here("data", "mesh_sdm_cod_SR.Rdata")) # can be found on Zenodo
 load(here("data", "setdet_cod_SR.Rdata"))
 
+load(here("data", "survey_yellowtail_base.Rdata")) # can be found on Zenodo
+load(here("data", "sdm_data_yellowtail_SR.Rdata")) # can be found on Zenodo
+load(here("data", "sdm_newdata_yellowtail.Rdata")) # can be found on Zenodo
+load(here("data", "mesh_sdm_yellowtail_SR.Rdata")) # can be found on Zenodo
 load(here("data", "setdet_yellowtail_SR.Rdata"))
-load(here("data", "survey_yellowtail_base.Rdata"))
-load(here("data", "sdm_data_yellowtail_SR.Rdata"))
-load(here("data", "sdm_newdata_yellowtail.Rdata"))
-load(here("data", "mesh_sdm_yellowtail_SR.Rdata"))
 
 load(here("data", "index_all_scenarios_200L.Rdata"))
 
