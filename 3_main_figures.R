@@ -1,3 +1,11 @@
+# ------------------------------------------------------------------------
+# This R code demonstrates the methods for:
+# Plotting the main figures in:
+# Yalcin et al. (2023). "Exploring the limits of spatiotemporal and design-based index standardization under reduced survey coverage."
+# ICES JMS. doi:
+# ------------------------------------------------------------------------
+
+# Load necessary libraries
 library(ggplot2)
 library(dplyr)
 library(here)
@@ -5,17 +13,15 @@ library(sf)
 library(sp)
 library(ggpubr)
 library(tidyverse)
-######################### Loading data
 
-here()
-
+# Load data
 load(here("data", "index_cod_all_scenarios_200L.Rdata"))
 load(here("data", "index_yellowtail_all_scenarios_200L.Rdata"))
 
-
+# Combining cod-like and yellowtail-like results
 index_all_scenarios <- rbind(index_cod_all_scenarios, index_yellowtail_all_scenarios)
 
-
+# Arranging the levels of the dat for plotting
 index_all_scenarios$type <- factor(index_all_scenarios$type, levels = c("TW + Depth",
                                                                         "TW",
                                                                         "NB + Depth",
@@ -32,8 +38,6 @@ index_all_scenarios$scenario <- factor(index_all_scenarios$scenario, levels = c(
                                                                                 "Area blocked",
                                                                                 "Recovery",
                                                                                 "Recovery + Spillover"))
-
-#save(index_all_scenarios, file = "./data/index_all_scenarios_200L.Rdata")
 
 load(here("data", "cell.Rdata"))
 load(here("data", "strat.Rdata"))
@@ -53,8 +57,11 @@ spill <- st_difference(buffer, mpa)
 
 blocked_strat <- strat |> filter(strat %in% c(2,3,4,5,17,18,19,20))
 
+# ------------------------------------------------------------------------
 
-######################### Figure 2: Scenario representations
+# Figure 2: Scenario representations
+
+# ------------------------------------------------------------------------
 
 setdet_cod_sf <- NULL # Base scenario
 for(i in seq_along(setdet_cod)){
@@ -201,9 +208,13 @@ so <- ggplot() +
 figure2 <- ggarrange(base, r30, sr, b30, rec, so, ncol = 6, nrow = 1, legend = "bottom", common.legend = TRUE)
 figure2
 
-ggsave("data/figure2_samples.pdf", plot = figure2, width = 15, height = 4, units = "in", dpi = 500, bg = "white")
+ggsave("data/figure2_samples_66.pdf", plot = figure2, width = 15, height = 3, units = "in", dpi = 500, bg = "white")
 
-######################### Figure 3: Example time series of estimated abundance indices
+# ------------------------------------------------------------------------
+
+# Figure 3: Example time series of estimated abundance indices
+
+# ------------------------------------------------------------------------
 
 colour_pal <-  c("Bootstrapped" = "#FDBF6F",
                  "DG" = "#1F78B4",
@@ -271,7 +282,11 @@ figure3
 
 ggsave("data/figure3_timeseries.pdf", plot = figure3, width = 12, height = 8, units = "in", dpi = 500, bg = "white")
 
-######################### Figure 4: Distributions of root mean squared log error (RMSLE) and mean relative error (MRE)
+# ------------------------------------------------------------------------
+
+# Figure 4: Distributions of root mean squared log error (RMSLE) and mean relative error (MRE)
+
+# ------------------------------------------------------------------------
 
 index_all_scenarios_accuracy <-
   index_all_scenarios |>
@@ -346,12 +361,14 @@ mre_plot <- metrics_mean |>
 figure4_performance <- ggarrange(rmse_plot, mre_plot, ncol = 1, nrow = 2, legend = "none")
 figure4_performance
 
-#APX_figure4_performance
 ggsave("data/figure4_performance.pdf", plot = figure4_performance, width = 12, height = 10, units = "in", dpi = 500, bg = "white")
 
-################# Figure 5: Coverage of the 95% confidence intervals
+# ------------------------------------------------------------------------
 
-#filter(year > 10) |>
+# Figure 5: Coverage of the 95% confidence intervals
+
+# ------------------------------------------------------------------------
+
 CI_coverage <- index_all_scenarios |>
   filter(type !=  "Design-based") |>
   filter(type !=  "Bootstrapped" | scenario !=  "Strata removal") |>
@@ -374,7 +391,6 @@ CI_width_per_pop <- index_all_scenarios |>
   mutate(CI_width = upr-lwr) |>
   group_by(pop, type, scenario, species) |>
   summarise(mCI_width = mean(CI_width))
-
 
 CI_coverage_plot <- CI_coverage |>
   ggplot(aes(x = mc, y = type, fill = type, group = paste(scenario, type))) +
