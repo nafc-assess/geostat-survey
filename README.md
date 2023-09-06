@@ -39,9 +39,10 @@ This repository contains the R codes used for calculations and figure plotting r
   - Description: Model functions.
 
 - **pop_cod_fn.R**
-  - Description: Functions related to cod-like population simulations. 
-
+  - Description: Functions related to cod-like population simulations.
+ 
 - **pop_yellowtail_fn.R**
-  - Description: Functions related to yellowtail-like population simulations. 
-
----
+  - Description: Functions related to yellowtail-like population simulations.
+ 
+## Data folder:
+  - This folder includes the data generated through the analysis and can be used for plotting.
