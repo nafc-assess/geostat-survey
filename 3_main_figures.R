@@ -208,7 +208,7 @@ so <- ggplot() +
 figure2 <- ggarrange(base, r30, sr, b30, rec, so, ncol = 6, nrow = 1, legend = "bottom", common.legend = TRUE)
 figure2
 
-ggsave("data/figure2_samples_66.pdf", plot = figure2, width = 15, height = 3, units = "in", dpi = 500, bg = "white")
+ggsave("data/figure2_samples.pdf", plot = figure2, width = 15, height = 3, units = "in", dpi = 500, bg = "white")
 
 # ------------------------------------------------------------------------
 
