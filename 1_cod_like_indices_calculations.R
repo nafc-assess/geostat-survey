@@ -1,5 +1,5 @@
 # ------------------------------------------------------------------------
-# This R code demonstrates the methods
+# This R code demonstrates the methods for:
 # Cod-like species design and model based indices calculation,
 # as described in:
 # Yalcin et al. (2023). "Exploring the limits of spatiotemporal and design-based index standardization under reduced survey coverage."
