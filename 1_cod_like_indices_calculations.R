@@ -1,6 +1,12 @@
-# Cod-like species design and model based indices calculation
+# ------------------------------------------------------------------------
+# This R code demonstrates the methods
+# Cod-like species design and model based indices calculation,
+# as described in:
+# Yalcin et al. (2023). "Exploring the limits of spatiotemporal and design-based index standardization under reduced survey coverage."
+# ICES JMS. doi:
+# ------------------------------------------------------------------------
 
-#############  Packages
+# Load necessary libraries
 library(SimSurvey)
 library(sdmTMB)
 library(tidyr)
@@ -15,22 +21,21 @@ plan(multisession, workers = 10L)
 
 ITER <- 200L
 
-### Load functions
+# Load necessary functions
 source("./pop_cod_fn.R")
 source("./model_run_fn.R")
 source("./bootstrapping_fn.R")
 source("./data_prep_fn.R")
 
-
 # set to 1 so data.table doesn't spawn forks on forks
 # usethis::edit_r_environ()
 Sys.getenv("OMP_THREAD_LIMIT")
 
-#############               #############
+# ------------------------------------------------------------------------
 
 # Scenario 1: BASE SCENARIO #
 
-#############               #############
+# ------------------------------------------------------------------------
 
 message("BASE SCENARIO")
 
@@ -40,7 +45,7 @@ set.seed(1)
 survey_cod <- furrr::future_map(seq_len(ITER), n_sim = 1, population_cod, .options = furrr::furrr_options(seed = TRUE, packages = "SimSurvey"))
 gc()
 
-save(survey_cod, file = "./data/survey_cod_base.Rdata")
+#save(survey_cod, file = "./data/survey_cod_base.Rdata")
 
 ############# True abundance
 
@@ -117,11 +122,11 @@ sdm_DG_IID_depth_index_cod <- furrr::future_map2_dfr(sdm_data_cod, mesh_sdm_cod,
                                                             formula = list(formula1, formula2), range_gt = 75, sigma_lt = 7.5, type = "DG + Depth", scenario = "Base",
                                                             species = "Cod-like", newdata = sdm_newdata_cod, model_run_DG, .id = "model", .progress = TRUE)
 
-#############               #############
+# ------------------------------------------------------------------------
 
 # Scenario 2: SET DENSITY REDUCTION #
 
-#############               #############
+# ------------------------------------------------------------------------
 
 message("SET DENSITY REDUCTION SCENARIO")
 
@@ -179,6 +184,7 @@ for( i in seq_along(setdet_cod_r30)){
 setdet_cod_r30 <- lapply(setdet_cod_r30, function(x) split(x, x$sim)) |> flatten()
 
 #save(setdet_cod_r30, file = "./data/setdet_cod_r30.Rdata")
+
 ############# Bootstrapped index
 
 boot_index_cod_r30 <- furrr::future_map_dfr(setdet_cod_r30, boot_wrapper, reps=1000, .options = furrr::furrr_options(seed = TRUE))|>
@@ -217,11 +223,11 @@ sdm_DG_IID_depth_index_cod_r30 <- furrr::future_map2_dfr(sdm_data_cod_r30, mesh_
                                                          formula = list(formula1, formula2), range_gt = 75, sigma_lt = 7.5, type = "DG + Depth", scenario = "Set reduction",
                                                          species = "Cod-like", newdata = sdm_newdata_cod, model_run_DG, .id = "model", .progress = TRUE)
 
-#############               #############
+# ------------------------------------------------------------------------
 
 # Scenario 3: STRATA REMOVAL SCENARIO
 
-#############               #############
+# ------------------------------------------------------------------------
 
 message("STRATA REMOVAL SCENARIO")
 
@@ -271,7 +277,7 @@ for(i in seq_along(setdet_cod_SR)){
 
 setdet_cod_SR <- lapply(setdet_cod_SR, function(x) split(x, x$sim)) |> flatten()
 
-save(setdet_cod_SR, file = "./data/setdet_cod_SR.Rdata")
+#save(setdet_cod_SR, file = "./data/setdet_cod_SR.Rdata")
 
 ############# Bootstrapped index
 
@@ -318,11 +324,11 @@ sdm_DG_IID_depth_index_cod_SR <- furrr::future_map2_dfr(sdm_data_cod_SR, mesh_sd
                                                         formula = list(formula1, formula2), range_gt = 75, sigma_lt = 7.5, type = "DG + Depth", scenario = "Strata removal",
                                                         species = "Cod-like", newdata = sdm_newdata_cod, model_run_DG, .id = "model", .progress = TRUE)
 
-#############                           #############
+# ------------------------------------------------------------------------
 
 # Scenario 4: AREA BLOCKED REDUCTION SCENARIO
 
-#############                           #############
+# ------------------------------------------------------------------------
 
 message("AREA BLOCKED REDUCTION SCENARIO")
 
@@ -416,11 +422,11 @@ sdm_DG_IID_depth_index_cod_b30 <- furrr::future_map2_dfr(sdm_data_cod_b30, mesh_
                                                             formula = list(formula1, formula2), range_gt = 75, sigma_lt = 7.5, type = "DG + Depth", scenario = "Area blocked",
                                                             species = "Cod-like", newdata = sdm_newdata_cod, model_run_DG, .id = "model", .progress = TRUE)
 
-#############                           #############
+# ------------------------------------------------------------------------
 
 # Scenario 5: RECOVERY
 
-#############                           #############
+# ------------------------------------------------------------------------
 
 message("RECOVERY SCENARIO")
 
@@ -503,7 +509,6 @@ mesh_sdm_cod_rec <- purrr::map(sdm_data_cod_rec, mesh_sdm_fn, existing_mesh = in
 
 sdm_newdata_cod <- sdm_newdata_fn(survey_cod_rec[[1]], sdm_data_cod_rec[[1]])
 
-
 ### Models
 
 ### IID + NB2
@@ -532,11 +537,11 @@ sdm_DG_IID_depth_index_cod_rec <- furrr::future_map2_dfr(sdm_data_cod_rec, mesh_
                                                          species = "Cod-like", newdata = sdm_newdata_cod, model_run_DG, .id = "model", .progress = TRUE)
 
 
-#############                           #############
+# ------------------------------------------------------------------------
 
 # Scenario 6: RECOVERY WITH SPILLOVER EFFECT
 
-#############                           #############
+# ------------------------------------------------------------------------
 
 message("RECOVERY WITH SPILLOVER EFFECT")
 
@@ -646,11 +651,11 @@ sdm_DG_IID_depth_index_cod_so <- furrr::future_map2_dfr(sdm_data_cod_so, mesh_sd
                                                         formula = list(formula1, formula2), range_gt = 75, sigma_lt = 7.5, type = "DG + Depth", scenario = "Recovery + Spillover",
                                                         species = "Cod-like", newdata = sdm_newdata_cod, model_run_DG, .id = "model", .progress = TRUE)
 
-#############                           #############
+# ------------------------------------------------------------------------
 
 # COMBINING ALL RESULTS
 
-#############                           #############
+# ------------------------------------------------------------------------
 
 index_cod_all_scenarios <- do.call(bind_rows, mget(ls(pattern = "index")))
 index_cod_all_scenarios <- merge(index_cod_all_scenarios, true_cod, by=c("pop", "year", "species"))
