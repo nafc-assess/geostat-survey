@@ -3,7 +3,7 @@
 # Yellowtail-like species design and model based indices calculation,
 # as described in:
 # Yalcin et al. (2023). "Exploring the limits of spatiotemporal and design-based index standardization under reduced survey coverage."
-# ICES JMS. doi:
+# ICES Journal of Marine Science. DOI: 10.1093/icesjms/fsad155
 # ------------------------------------------------------------------------
 
 # Load necessary libraries
@@ -30,7 +30,6 @@ source("./data_prep_fn.R")
 # set to 1 so data.table doesn't spawn forks on forks
 # usethis::edit_r_environ()
 Sys.getenv("OMP_THREAD_LIMIT")
-
 
 # ------------------------------------------------------------------------
 
