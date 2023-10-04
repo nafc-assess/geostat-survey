@@ -3,7 +3,7 @@
 # Cod-like species design and model based indices calculation,
 # as described in:
 # Yalcin et al. (2023). "Exploring the limits of spatiotemporal and design-based index standardization under reduced survey coverage."
-# ICES JMS. doi:
+# ICES Journal of Marine Science. DOI: 10.1093/icesjms/fsad155
 # ------------------------------------------------------------------------
 
 # Load necessary libraries
@@ -183,7 +183,7 @@ for( i in seq_along(setdet_cod_r30)){
 
 setdet_cod_r30 <- lapply(setdet_cod_r30, function(x) split(x, x$sim)) |> flatten()
 
-#save(setdet_cod_r30, file = "./data/setdet_cod_r30.Rdata")
+save(setdet_cod_r30, file = "./data/setdet_cod_r30.Rdata")
 
 ############# Bootstrapped index
 
@@ -277,7 +277,7 @@ for(i in seq_along(setdet_cod_SR)){
 
 setdet_cod_SR <- lapply(setdet_cod_SR, function(x) split(x, x$sim)) |> flatten()
 
-#save(setdet_cod_SR, file = "./data/setdet_cod_SR.Rdata")
+save(setdet_cod_SR, file = "./data/setdet_cod_SR.Rdata")
 
 ############# Bootstrapped index
 
@@ -380,7 +380,7 @@ for(i in seq_along(setdet_cod_b30)){
 
 setdet_cod_b30 <- lapply(setdet_cod_b30, function(x) split(x, x$sim)) |> flatten()
 
-#save(setdet_cod_b30, file = "./data/setdet_cod_b30.Rdata")
+save(setdet_cod_b30, file = "./data/setdet_cod_b30.Rdata")
 
 ############# Bootstrapped index
 
@@ -491,7 +491,7 @@ for(i in seq_along(setdet_cod_rec)){
 
 setdet_cod_rec <- lapply(setdet_cod_rec, function(x) split(x, x$sim)) |> flatten()
 
-#save(setdet_cod_rec, file = "./data/setdet_cod_rec.Rdata")
+save(setdet_cod_rec, file = "./data/setdet_cod_rec.Rdata")
 
 ############# Bootstrapped index
 
@@ -606,7 +606,7 @@ for( i in seq_along(setdet_cod_so)){
 
 setdet_cod_so <- lapply(setdet_cod_so, function(x) split(x, x$sim)) |> flatten()
 
-#save(setdet_cod_so, file = "./data/setdet_cod_so.Rdata")
+save(setdet_cod_so, file = "./data/setdet_cod_so.Rdata")
 
 ############# Bootstrapped index
 
