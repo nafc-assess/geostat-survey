@@ -45,7 +45,7 @@ set.seed(1)
 survey_cod <- furrr::future_map(seq_len(ITER), n_sim = 1, population_cod, .options = furrr::furrr_options(seed = TRUE, packages = "SimSurvey"))
 gc()
 
-#save(survey_cod, file = "./data/survey_cod_base.Rdata")
+save(survey_cod, file = "./data/survey_cod_base.Rdata")
 
 ############# True abundance
 
@@ -393,7 +393,7 @@ boot_index_cod_b30 <- furrr::future_map_dfr(setdet_cod_b30, boot_wrapper, reps=1
 
 sdm_data_cod_b30 <- furrr::future_map(setdet_cod_b30, sdm_data_fn)
 
-#save(sdm_data_cod_b30, file = "./data/sdm_data_cod_b30.Rdata")
+save(sdm_data_cod_b30, file = "./data/sdm_data_cod_b30.Rdata")
 
 mesh_sdm_cod_b30  <- purrr::map(sdm_data_cod_b30, mesh_sdm_fn, existing_mesh = inla_mesh)
 
