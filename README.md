@@ -18,30 +18,30 @@ This repository contains the R codes used for calculations and figure plotting r
 
 ## Appendices:
 
-- **4_appendix_1_additional_figures.R**
+**4_appendix_1_additional_figures.R**
   - Description: Script containing additional figures for Appendix 1.
 
-- **5_appendix_2_testing_sampling_variation.R**
+**5_appendix_2_testing_sampling_variation.R**
   - Description: Codes for testing sampling variation in Appendix 2.
 
-- **6_appendix_3_recovery_spillover.R**
+**6_appendix_3_recovery_spillover.R**
   - Description: Script for mapping the base scenario, recovery of the closed area, and recovery with spillover effect in Appendix 3.
  
 ## Functions:
 
-- **bootstrapping_fn.R**
+**bootstrapping_fn.R**
   - Description: Bootstrap function for design-based indices.
 
-- **data_prep_fn.R**
+**data_prep_fn.R**
   - Description: Data preparation functions.
 
-- **model_run_fn.R**
+**model_run_fn.R**
   - Description: Model functions.
 
-- **pop_cod_fn.R**
+**pop_cod_fn.R**
   - Description: Functions related to cod-like population simulations.
  
-- **pop_yellowtail_fn.R**
+**pop_yellowtail_fn.R**
   - Description: Functions related to yellowtail-like population simulations.
  
 ## Data folder:
