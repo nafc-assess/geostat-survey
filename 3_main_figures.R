@@ -2,7 +2,7 @@
 # This R code demonstrates the methods for:
 # Plotting the main figures in:
 # Yalcin et al. (2023). "Exploring the limits of spatiotemporal and design-based index standardization under reduced survey coverage."
-# ICES JMS. doi:
+# ICES Journal of Marine Science. DOI: 10.1093/icesjms/fsad155
 # ------------------------------------------------------------------------
 
 # Load necessary libraries
@@ -21,7 +21,7 @@ load(here("data", "index_yellowtail_all_scenarios_200L.Rdata"))
 # Combining cod-like and yellowtail-like results
 index_all_scenarios <- rbind(index_cod_all_scenarios, index_yellowtail_all_scenarios)
 
-# Arranging the levels of the dat for plotting
+# Arranging the levels of the data for plotting
 index_all_scenarios$type <- factor(index_all_scenarios$type, levels = c("TW + Depth",
                                                                         "TW",
                                                                         "NB + Depth",
@@ -31,13 +31,22 @@ index_all_scenarios$type <- factor(index_all_scenarios$type, levels = c("TW + De
                                                                         "Design-based",
                                                                         "Bootstrapped"))
 
+##### Changing "Area blocked" to "Reduced coverage"
+
+index_all_scenarios$scenario[index_all_scenarios$scenario == "Area blocked"] <- "Reduced coverage"
+
+
 
 index_all_scenarios$scenario <- factor(index_all_scenarios$scenario, levels = c("Base",
                                                                                 "Set reduction" ,
                                                                                 "Strata removal",
-                                                                                "Area blocked",
+                                                                                "Reduced coverage",
                                                                                 "Recovery",
                                                                                 "Recovery + Spillover"))
+
+
+
+
 
 load(here("data", "cell.Rdata"))
 load(here("data", "strat.Rdata"))
@@ -63,42 +72,29 @@ blocked_strat <- strat |> filter(strat %in% c(2,3,4,5,17,18,19,20))
 
 # ------------------------------------------------------------------------
 
-setdet_cod_sf <- NULL # Base scenario
-for(i in seq_along(setdet_cod)){
-  coordinates(setdet_cod[[i]]) = cbind(setdet_cod[[i]]$x, setdet_cod[[i]]$y)
-  setdet_cod_sf[[i]] <- st_as_sf(setdet_cod[[i]])
+convert_to_sf <- function(data_list) {
+  sf_list <- vector("list", length(data_list))
+  for(i in seq_along(data_list)){
+    # If it's a data.table, convert it to a data frame
+    if (inherits(data_list[[i]], "data.table")) {
+      data_list[[i]] <- as.data.frame(data_list[[i]])
+    }
+    # Assign coordinates
+    coordinates(data_list[[i]]) = ~x+y
+    # Convert to sf object
+    sf_list[[i]] <- st_as_sf(data_list[[i]])
+  }
+  return(sf_list)
 }
 
-setdet_cod_sf_r30 <- NULL # 30% set reduction
-for(i in seq_along(setdet_cod_r30)){
-  coordinates(setdet_cod_r30[[i]]) = cbind(setdet_cod_r30[[i]]$x, setdet_cod_r30[[i]]$y)
-  setdet_cod_sf_r30[[i]] <- st_as_sf(setdet_cod_r30[[i]])
-}
+# Use the function for various scenarios
 
-setdet_cod_sf_b30 <- NULL # 30% area blocked
-for(i in seq_along(setdet_cod_b30)){
-  coordinates(setdet_cod_b30[[i]]) = cbind(setdet_cod_b30[[i]]$x, setdet_cod_b30[[i]]$y)
-  setdet_cod_sf_b30[[i]] <- st_as_sf(setdet_cod_b30[[i]])
-}
-
-setdet_cod_sf_SR <- NULL # Strata removal scenario
-for(i in seq_along(setdet_cod_SR)){
-  coordinates(setdet_cod_SR[[i]]) = cbind(setdet_cod_SR[[i]]$x, setdet_cod_SR[[i]]$y)
-  setdet_cod_sf_SR[[i]] <- st_as_sf(setdet_cod_SR[[i]])
-}
-
-setdet_cod_sf_rec <- NULL # Recovery
-for(i in seq_along(setdet_cod_rec)){
-  coordinates(setdet_cod_rec[[i]]) = cbind(setdet_cod_rec[[i]]$x, setdet_cod_rec[[i]]$y)
-  setdet_cod_sf_rec[[i]] <- st_as_sf(setdet_cod_rec[[i]])
-}
-
-setdet_cod_sf_so <- NULL # Recovery + Spillover
-for(i in seq_along(setdet_cod_so)){
-  coordinates(setdet_cod_so[[i]]) = cbind(setdet_cod_so[[i]]$x, setdet_cod_so[[i]]$y)
-  setdet_cod_sf_so[[i]] <- st_as_sf(setdet_cod_so[[i]])
-}
-
+setdet_cod_sf <- convert_to_sf(setdet_cod)         # Base scenario
+setdet_cod_sf_r30 <- convert_to_sf(setdet_cod_r30) # 30% set reduction
+setdet_cod_sf_b30 <- convert_to_sf(setdet_cod_b30) # 30% area blocked
+setdet_cod_sf_SR <- convert_to_sf(setdet_cod_SR)   # Strata removal scenario
+setdet_cod_sf_rec <- convert_to_sf(setdet_cod_rec) # Recovery
+setdet_cod_sf_so <- convert_to_sf(setdet_cod_so)   # Recovery + Spillover
 
 base <- ggplot() +
   geom_sf(data = strat, mapping = aes(), fill = "grey99", alpha = 0.4, colour = "grey20", size = 1, inherit.aes = FALSE) +
@@ -115,7 +111,6 @@ base <- ggplot() +
         legend.text = element_text(size = 12)) +
   labs(title = "a) Base scenario") +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
-
 
 r30 <- ggplot() +
   geom_sf(data = strat, mapping = aes(), fill = "grey99", alpha = 0.4, colour = "grey20", size = 1, inherit.aes = FALSE) +
@@ -150,7 +145,6 @@ sr <- ggplot() +
   labs(title = "c) Strata removal")+
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 
-
 b30 <- ggplot() +
   geom_sf(data = mpa, fill = alpha("yellow",0.2)) +
   geom_sf(data = strat, mapping = aes(), fill = "grey99", alpha = 0.4, colour = "grey20", size = 1, inherit.aes = FALSE) +
@@ -165,7 +159,7 @@ b30 <- ggplot() +
         strip.background = element_rect(fill = "grey99"),
         legend.title = element_text(size = 11),
         legend.text = element_text(size = 12)) +
-  labs(title = "d) Area blocked")+
+  labs(title = "d) Reduced coverage")+
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 
 rec <- ggplot() +
@@ -185,7 +179,6 @@ rec <- ggplot() +
   labs(title = "e) Recovery")+
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 
-
 so <- ggplot() +
   geom_sf(data = mpa, fill = alpha("yellow",0.2)) +
   geom_sf(data = spill, fill = alpha("yellow",0.5)) +
@@ -204,11 +197,10 @@ so <- ggplot() +
   labs(title = "f) Recovery + Spillover") +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 
-
 figure2 <- ggarrange(base, r30, sr, b30, rec, so, ncol = 6, nrow = 1, legend = "bottom", common.legend = TRUE)
 figure2
 
-ggsave("data/figure2_samples.pdf", plot = figure2, width = 15, height = 3, units = "in", dpi = 500, bg = "white")
+ggsave("data/figure2_samples.eps", plot = figure2, width = 15, height = 3, units = "in", dpi = 500, bg = "white")
 
 # ------------------------------------------------------------------------
 
@@ -240,7 +232,7 @@ cod_ts <- ggplot() +
               filter(pop == 1 | pop == 20)|>
               filter(species == "Cod-like"), aes(year, true), linewidth = 1) +
   labs(x = "Year", y = "N", colour = "Estimator", fill = "Estimator", size = "Estimator") +
-  facet_grid(pop ~scenario, scales = "free_y", labeller = labeller(pop =
+  facet_grid(pop ~scenario, labeller = labeller(pop =
                                                                      c("1" = "Population 1",
                                                                        "20" = "Population 2"))) +
   scale_fill_manual(values = colour_pal[1:3]) +
@@ -266,7 +258,7 @@ yt_ts <- ggplot() +
               filter(pop == 110 | pop == 2)|>
               filter(species == "Yellowtail-like"), aes(year, true), linewidth = 1) +
   labs(x = "Year", y = "N", colour = "Estimator", fill = "Estimator", size = "Estimator") +
-  facet_grid(pop ~scenario, scales = "free_y", labeller = labeller(pop =
+  facet_grid(pop ~scenario, labeller = labeller(pop =
                                                                      c("110" = "Population 1",
                                                                        "2" = "Population 2"))) +
   scale_fill_manual(values = colour_pal[1:3]) +
@@ -314,7 +306,7 @@ rmse_plot <- metrics_mean |>
               aes(x =  value, y =  type, col = type), alpha = 0.5) +
   geom_point(aes(), colour = "black", size = 1) +
   #facet_grid(species ~ scenario) +
-  facet_grid(species ~ scenario, scales = "free") +
+  facet_grid(species ~ scenario) +
   theme_bw() +
   scale_color_manual(values = c("DG" = "#1F78B4",
                                 "DG + Depth" = "#A6CEE3",
@@ -339,7 +331,7 @@ mre_plot <- metrics_mean |>
               aes(x =  value, y =  type, col = type), alpha = 0.5) +
   geom_point(aes(), colour = "black", size = 1) +
   #facet_grid(species ~ scenario) +
-  facet_grid(species ~ scenario, scales = "free") +
+  facet_grid(species ~ scenario) +
   theme_bw() +
   scale_color_manual(values = c("DG" = "#1F78B4",
                                 "DG + Depth" = "#A6CEE3",
@@ -414,7 +406,6 @@ CI_coverage_plot <- CI_coverage |>
   theme(text = element_text(size = 14)) +
   theme(strip.background = element_rect(fill = "grey97"))
 
-
 CI_width_plot <- ggplot(CI_width) +
   geom_violin(data= CI_width_per_pop |> filter(type !=  "Bootstrapped" | scenario !=  "Strata removal"), aes(log(mCI_width), type, col = type),
               alpha = 0.5)+
@@ -434,9 +425,7 @@ CI_width_plot <- ggplot(CI_width) +
   theme(strip.background = element_rect(fill = "grey97")) +
   labs(title = "b) Confidence interval width")
 
-
 figure5_CI <- ggarrange(CI_coverage_plot, CI_width_plot, ncol = 1, nrow = 2, legend = "none")
 figure5_CI
-
 
 ggsave("data/figure5_CI.pdf", plot = figure5_CI, width = 12, height = 10, units = "in", dpi = 500, bg = "white")
