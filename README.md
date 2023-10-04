@@ -1,9 +1,9 @@
 # geostat-survey
 This repository contains the R codes used for calculations and figure plotting related to our research:
 
-> Yalcin, S., Anderson, S., Regular, P., English, P. (In review). Exploring the limits of spatiotemporal and design-based index standardization under reduced survey coverage. ICES Journal of Marine Science.
+> Yalcin, S., Anderson, S., Regular, P., English, P. (2023). Exploring the limits of spatiotemporal and design-based index standardization under reduced survey coverage. ICES Journal of Marine Science. DOI: 10.1093/icesjms/fsad155
 
-**Note**: The code and data generated from this research are being archived on Zenodo [DOI:...].
+**Note**: The code and data generated from this research are being archived on Zenodo [DOI: 10.5281/zenodo.8326526].
 
 ## Main Scripts:
 
