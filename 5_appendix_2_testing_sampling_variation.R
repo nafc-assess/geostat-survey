@@ -2,7 +2,8 @@
 # This R code demonstrates the methods for:
 # Appendix 2 --- Testing sampling variation in:
 # Yalcin et al. (2023). "Exploring the limits of spatiotemporal and design-based index standardization under reduced survey coverage."
-# ICES JMS. doi:
+# ICES Journal of Marine Science. DOI: 10.1093/icesjms/fsad155
+# Zenodo DOI: 10.5281/zenodo.8326526
 # ------------------------------------------------------------------------
 
 # Load necessary libraries
