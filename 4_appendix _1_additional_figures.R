@@ -2,8 +2,8 @@
 # This R code demonstrates the methods for:
 # Plotting the Appendix 1 – Additional figures in:
 # Yalcin et al. (2023). "Exploring the limits of spatiotemporal and design-based index standardization under reduced survey coverage."
-# ICES JMS. doi:
-# Zenodo: doi:
+# ICES Journal of Marine Science. DOI: 10.1093/icesjms/fsad155
+# Zenodo DOI: 10.5281/zenodo.8326526
 # ------------------------------------------------------------------------
 
 # Load necessary libraries
@@ -580,6 +580,19 @@ ggsave("data/FigureS_yt_maps.pdf", plot = FigureS_yt_maps, width = 10, height = 
 # Figure S4: Fig. 4 with independent x-axis scales
 
 # ------------------------------------------------------------------------
+
+load(here("data", "index_all_scenarios_200L.Rdata"))
+
+index_all_scenarios$scenario <- as.character(index_all_scenarios$scenario)
+index_all_scenarios$scenario[index_all_scenarios$scenario == "Area blocked"] <- "Reduced coverage"
+index_all_scenarios$scenario <- as.factor(index_all_scenarios$scenario)
+
+index_all_scenarios$scenario <- factor(index_all_scenarios$scenario, levels = c("Base",
+                                                                                "Set reduction" ,
+                                                                                "Strata removal",
+                                                                                "Reduced coverage",
+                                                                                "Recovery",
+                                                                                "Recovery + Spillover"))
 
 index_all_scenarios_accuracy <-
   index_all_scenarios |>
